@@ -26,10 +26,15 @@ load_dotenv(dotenv_path=dotenv_path)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-upeu#zdbn--bfl&buv%@n9!@a*i-7!-(4kh^u9*+=ky2vrjx)('
 
+HIBP_API_KEY = os.getenv('HIBP_API_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['vicre-nextjs-app01.ngrok.app', 'localhost']
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "vicre-nextjs-app01.ngrok.app",
+]
 
 
 # Application definition
@@ -42,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'drf_yasg',
     'api',
 ]
@@ -59,6 +65,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
