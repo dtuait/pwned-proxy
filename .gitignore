@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
-*.env
+*.env*
+*__pycache__*
 *.old
 *.log
 *.bak
@@ -11,3 +12,4 @@
 .gnupg/
 .bash_history
 .dotnet/
+app-main/db.sqlite3
