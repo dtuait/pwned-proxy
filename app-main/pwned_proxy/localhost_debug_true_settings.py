@@ -1,0 +1,14 @@
+from .WARNING_import_settings_with_DEBUG_enabled import *
+
+
+CSRF_COOKIE_DOMAIN = 'localhost'
+
+DEBUG = True
+
+# SESSION_COOKIE_SECURE = False
+# CSRF_COOKIE_SECURE = False
+# SECURE_HSTS_SECONDS = 0
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+# SECURE_HSTS_PRELOAD = False
+# SECURE_SSL_REDIRECT = False
+

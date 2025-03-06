@@ -1,0 +1,1 @@
+ngrok http --url=vicre-nextjs-app01.ngrok.app 3000

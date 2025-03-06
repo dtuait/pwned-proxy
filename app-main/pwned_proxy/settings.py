@@ -27,9 +27,9 @@ load_dotenv(dotenv_path=dotenv_path)
 SECRET_KEY = 'django-insecure-upeu#zdbn--bfl&buv%@n9!@a*i-7!-(4kh^u9*+=ky2vrjx)('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['vicre-nextjs-app01.ngrok.app', 'localhost']
 
 
 # Application definition

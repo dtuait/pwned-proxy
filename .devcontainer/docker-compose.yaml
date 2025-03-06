@@ -2,12 +2,13 @@ version: "3.9"
 
 services:
   pwned-proxy-app-main:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        CURRENT_UID: ${CURRENT_UID:-1000}
-        CURRENT_GID: ${CURRENT_GID:-1000}
+    image: dtuait/pwned-proxy-app-main:python-3.13-bullseye-django-5.1.6-myversion-1.0.1
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+      # args:
+      #   CURRENT_UID: ${CURRENT_UID:-1000}
+      #   CURRENT_GID: ${CURRENT_GID:-1000}
     user: "${CURRENT_UID:-1000}:${CURRENT_GID:-1000}"
     command: sleep infinity
     stdin_open: true
