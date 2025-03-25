@@ -33,7 +33,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "vicre-nextjs-app01.ngrok.app",
+    "api.dtuaitsoc.ngrok.dev",
 ]
 
 
@@ -152,3 +152,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://api.dtuaitsoc.ngrok.dev",
+    # add other domains if necessary
+]
+
+CORS_ALLOW_ALL_ORIGINS = True

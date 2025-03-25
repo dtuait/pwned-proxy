@@ -153,24 +153,28 @@ class BreachedDomainProxyView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
+
+
 class BreachedAccountProxyView(APIView):
     """
-    GET /api/breached-account/?email=user@domain.com
+    GET /api/breached-account/<email>
 
     - The domain of the email must match the API key's allowed_domain.
     - Calls: https://haveibeenpwned.com/api/v3/breachedaccount/<email>
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /breachedaccount/<email> on HaveIBeenPwned. "
-                              "Email domain must match your API key's allowed_domain.",
+        operation_description=(
+            "Proxy to /breachedaccount/<email> on HaveIBeenPwned. "
+            "Email domain must match your API key's allowed_domain."
+        ),
         manual_parameters=[
             openapi.Parameter(
-                name='email',
-                in_=openapi.IN_QUERY,
+                name='email_in_path',
+                in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
-                description='Email address (must match the API key domain).'
+                description='Email address (URL-encoded if needed).'
             ),
             openapi.Parameter(
                 name='X-API-Key',
@@ -181,14 +185,14 @@ class BreachedAccountProxyView(APIView):
             ),
         ],
         responses={
-            200: "Success",
+            200: "Success (or an empty list if 404 from HIBP).",
             400: "Missing/invalid email",
             401: "No valid API key",
             403: "Email domain mismatch",
             502: "Upstream error"
         }
     )
-    def get(self, request):
+    def get(self, request, email=None):  # <-- note the 'email' argument
         api_key_obj = request.auth
         if not api_key_obj:
             return Response({"detail": "No valid API key provided."}, status=401)
@@ -197,11 +201,10 @@ class BreachedAccountProxyView(APIView):
         if not domain:
             return Response({"detail": "API key has no domain."}, status=403)
 
-        email = request.query_params.get('email')
         if not email:
-            return Response({"detail": "Missing 'email' parameter."}, status=400)
+            return Response({"detail": "Missing email in path."}, status=400)
 
-        # Check the domain part of the email
+        # Check domain part
         parts = email.rsplit('@', 1)
         if len(parts) != 2:
             return Response({"detail": "Invalid email format."}, status=400)
@@ -213,13 +216,25 @@ class BreachedAccountProxyView(APIView):
                 status=403
             )
 
+        # Construct the upstream URL
         hibp_url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
         hibp_headers = {
-            'hibp-api-key': settings.HIBP_API_KEY,
+            "hibp-api-key": settings.HIBP_API_KEY,
+            "User-Agent": "pwned_proxy_app/1.0"  # HIBP typically requires a User-Agent
         }
 
         try:
             hibp_response = requests.get(hibp_url, headers=hibp_headers)
+            # If 404 from HIBP means "no breaches," you can EITHER:
+            if hibp_response.status_code == 404:
+                # Option A: pass 404 straight through
+                # return Response([], status=404)
+
+                # Option B: convert 404 -> an empty array with 200
+                return Response([], status=200)
+
+            # Otherwise, parse JSON (if 200 or other code)
             return Response(hibp_response.json(), status=hibp_response.status_code)
+
         except requests.RequestException as e:
             return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)

@@ -12,6 +12,7 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
+     url='https://api.dtuaitsoc.ngrok.dev',  
 )
 
 urlpatterns = [
@@ -19,4 +20,9 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0)),
+
+    # Redirect root to /swagger/
+    path('', schema_view.with_ui('swagger', cache_timeout=0)),
 ]
+
+

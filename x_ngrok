@@ -1,1 +1,1 @@
-ngrok http --url=vicre-nextjs-app01.ngrok.app 3000
+ngrok http --url=api.dtuaitsoc.ngrok.dev 3000
