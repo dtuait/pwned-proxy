@@ -1,5 +1,3 @@
-# api/urls.py
-
 from django.urls import path
 from .views import (
     CreateAPIKeyView,
@@ -10,7 +8,8 @@ from .views import (
 
 urlpatterns = [
     path('create-key/', CreateAPIKeyView.as_view(), name='create-api-key'),
-    path('stealer-logs/', StealerLogsProxyView.as_view(), name='stealer-logs'),
-    path('breached-domain/', BreachedDomainProxyView.as_view(), name='breached-domain'),
+    # Note: we capture the domain in the URL
+    path('stealer-logs/<str:domain>/', StealerLogsProxyView.as_view(), name='stealer-logs'),
+    path('breached-domain/<str:domain>/', BreachedDomainProxyView.as_view(), name='breached-domain'),
     path('breached-account/<path:email>', BreachedAccountProxyView.as_view(), name='breached-account'),
 ]

@@ -1,56 +1,94 @@
-# api/views.py
-
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import Group
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-
-from django.conf import settings
 import requests
-
+from django.conf import settings
+from django.contrib.auth.models import Group
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import APIKey
+from .models import APIKey, Domain
+from .models import hash_api_key, generate_api_key  # optional if used
 
 
 class CreateAPIKeyView(APIView):
     """
     POST /api/create-key/
-
-    Body:
+    
+    Creates a new API key with multiple domains for a specified group.
+    Expects JSON body like:
       {
-        "domain_group_name": "example.com"
+        "group_name": "Danmarks Tekniske Universitet",
+        "domains": ["dtu.dk", "cert.dk"]
       }
-
-    - User must be authenticated (e.g., via session or token) and in the specified group.
-    - Creates and returns a *raw* API key exactly once.
+    
+    Returns the raw key exactly once.
     """
-    permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description=(
+            "Create a new API key for a given group + multiple domains. Returns raw key once."
+        ),
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'group_name': openapi.Schema(type=openapi.TYPE_STRING),
+                'domains': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING)
+                ),
+            },
+            required=['group_name', 'domains'],
+        ),
+        responses={
+            201: openapi.Response(
+                description="Key created successfully.",
+                examples={"application/json": {
+                    "message": "Key created for group 'Danmarks Tekniske Universitet' with 2 domain(s)",
+                    "raw_key": "346a3d9f5e334a12aef5ff99742b18b2"
+                }}
+            ),
+            400: "Bad request format",
+            403: "User not allowed to create key for that group (optional check)",
+        }
+    )
     def post(self, request):
-        domain_group_name = request.data.get("domain_group_name")
-        if not domain_group_name:
-            return Response({"detail": "Missing domain_group_name"}, status=400)
+        data = request.data
+        group_name = data.get('group_name')
+        domain_list = data.get('domains')
 
-        # Check the user is in that group
-        if not request.user.groups.filter(name=domain_group_name).exists():
-            return Response({"detail": "You are not a member of this domain group."}, status=403)
+        if not group_name or not domain_list:
+            return Response(
+                {"detail": "Missing 'group_name' or 'domains'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        group = get_object_or_404(Group, name=domain_group_name)
-        allowed_domain = domain_group_name.lower()
+        # 1) Fetch or 404 if group doesn't exist
+        group = get_object_or_404(Group, name=group_name)
 
-        new_key_obj, raw_key = APIKey.create_api_key(
-            domain_group=group, allowed_domain=allowed_domain
+        # Optional check: ensure the user is in that group
+        # if not request.user.groups.filter(name=group_name).exists():
+        #    raise PermissionDenied("You are not a member of this group.")
+
+        # 2) Look up or create Domain objects
+        domain_objs = []
+        for dname in domain_list:
+            dom_obj, _ = Domain.objects.get_or_create(name=dname)
+            domain_objs.append(dom_obj)
+
+        # 3) Create the APIKey
+        api_key_obj, raw_key = APIKey.create_api_key(
+            group=group,
+            domain_list=domain_objs
         )
+
         return Response(
             {
-                "message": f"Key created for domain '{allowed_domain}'",
-                "raw_key": raw_key  # Show raw key once
+                "message": (f"Key created for group '{group_name}' "
+                            f"with {len(domain_list)} domain(s)"),
+                "raw_key": raw_key
             },
             status=status.HTTP_201_CREATED
         )
@@ -58,183 +96,161 @@ class CreateAPIKeyView(APIView):
 
 class StealerLogsProxyView(APIView):
     """
-    GET /api/stealer-logs/
+    GET /api/stealer-logs/<domain>/
 
-    Uses the domain from the request's API key (request.auth.allowed_domain) to call:
-      https://haveibeenpwned.com/api/v3/stealerlogsbyemaildomain/<domain>
+    Proxies to: https://haveibeenpwned.com/api/v3/stealerlogsbyemaildomain/<domain>
+    We check if <domain> is in api_key.domains. If yes, we proxy the request.
+    Otherwise, 403 forbidden.
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /stealerlogsbyemaildomain/<domain> on HaveIBeenPwned. "
-                              "Domain is derived from your API key (X-API-Key).",
+        operation_description="Proxy to /stealerlogsbyemaildomain/<domain>. Domain must be in APIKey.domains.",
         manual_parameters=[
+            openapi.Parameter(
+                name='domain',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                required=True,
+                description='Domain to look up (e.g. "dtu.dk"). Must be in APIKey.domains.'
+            ),
             openapi.Parameter(
                 name='X-API-Key',
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
-                description='Raw API Key (linked to exactly one domain).'
+                description='Your raw API key'
             ),
-        ],
-        responses={
-            200: "Success",
-            401: "No valid API key provided",
-            403: "API key has no domain or domain not allowed",
-            502: "Upstream error (HIBP or network issue)",
-        }
+        ]
     )
-    def get(self, request):
+    def get(self, request, domain=None):
         api_key_obj = request.auth
         if not api_key_obj:
-            return Response({"detail": "No valid API key provided."}, status=401)
+            return Response({"detail": "No valid API key."}, status=401)
 
-        domain = api_key_obj.allowed_domain
-        if not domain:
-            raise PermissionDenied("This API key has no domain associated.")
+        # Ensure domain is in the M2M set
+        if not domain or not api_key_obj.domains.filter(name=domain).exists():
+            raise PermissionDenied(f"API key not authorized for domain '{domain}'.")
 
-        hibp_headers = {
-            'hibp-api-key': settings.HIBP_API_KEY,
-            # 'Cookie': '...optional CF cookie if needed...'
-        }
+        # Proxy to HIBP
         hibp_url = f"https://haveibeenpwned.com/api/v3/stealerlogsbyemaildomain/{domain}"
+        headers = {
+            "hibp-api-key": settings.HIBP_API_KEY,
+            "User-Agent": "pwned_proxy_app/1.0"
+        }
 
         try:
-            hibp_response = requests.get(hibp_url, headers=hibp_headers)
-            return Response(hibp_response.json(), status=hibp_response.status_code)
+            resp = requests.get(hibp_url, headers=headers)
+            return Response(resp.json(), status=resp.status_code)
         except requests.RequestException as e:
             return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 class BreachedDomainProxyView(APIView):
     """
-    GET /api/breached-domain/
+    GET /api/breached-domain/<domain>/
 
-    Uses the domain from the API key to call:
-      https://haveibeenpwned.com/api/v3/breacheddomain/<domain>
+    Proxies to: https://haveibeenpwned.com/api/v3/breacheddomain/<domain>
+    We check if <domain> is in api_key.domains. If yes, we proxy. Otherwise, 403.
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /breacheddomain/<domain> on HaveIBeenPwned. "
-                              "Domain derived from your API key.",
+        operation_description="Proxy to /breacheddomain/<domain>. Domain must be in the APIKey.",
         manual_parameters=[
+            openapi.Parameter(
+                name='domain',
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                required=True,
+                description='Which domain to query.'
+            ),
             openapi.Parameter(
                 name='X-API-Key',
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
-                required=True,
-                description='Raw API Key (one domain).'
+                required=True
             ),
-        ],
-        responses={
-            200: "Success",
-            401: "No valid API key provided",
-            403: "API key has no domain or domain not allowed",
-            502: "Upstream error"
-        }
+        ]
     )
-    def get(self, request):
+    def get(self, request, domain=None):
         api_key_obj = request.auth
         if not api_key_obj:
-            return Response({"detail": "No valid API key provided."}, status=401)
+            return Response({"detail": "No valid API key."}, status=401)
 
-        domain = api_key_obj.allowed_domain
-        if not domain:
-            raise PermissionDenied("This API key has no domain associated.")
+        if not domain or not api_key_obj.domains.filter(name=domain).exists():
+            raise PermissionDenied(f"API key not authorized for domain '{domain}'.")
 
-        hibp_headers = {
-            'hibp-api-key': settings.HIBP_API_KEY,
-        }
         hibp_url = f"https://haveibeenpwned.com/api/v3/breacheddomain/{domain}"
+        headers = {
+            "hibp-api-key": settings.HIBP_API_KEY,
+            "User-Agent": "pwned_proxy_app/1.0"
+        }
 
         try:
-            hibp_response = requests.get(hibp_url, headers=hibp_headers)
-            return Response(hibp_response.json(), status=hibp_response.status_code)
+            resp = requests.get(hibp_url, headers=headers)
+            return Response(resp.json(), status=resp.status_code)
         except requests.RequestException as e:
             return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
-
-
 
 
 class BreachedAccountProxyView(APIView):
     """
     GET /api/breached-account/<email>
 
-    - The domain of the email must match the API key's allowed_domain.
-    - Calls: https://haveibeenpwned.com/api/v3/breachedaccount/<email>
+    Proxies to: https://haveibeenpwned.com/api/v3/breachedaccount/<email>
+    The domain of the <email> must be in api_key.domains.
+    If HIBP says 404 = "not found," we convert to empty array w/ 200.
     """
 
     @swagger_auto_schema(
-        operation_description=(
-            "Proxy to /breachedaccount/<email> on HaveIBeenPwned. "
-            "Email domain must match your API key's allowed_domain."
-        ),
+        operation_description="Proxy to /breachedaccount/<email>. Email's domain must be in APIKey.domains.",
         manual_parameters=[
             openapi.Parameter(
-                name='email_in_path',
+                name='email',
                 in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
-                description='Email address (URL-encoded if needed).'
+                description='The email to check. e.g. "user@dtu.dk"'
             ),
             openapi.Parameter(
                 name='X-API-Key',
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
-                required=True,
-                description='Raw API Key (one domain).'
+                required=True
             ),
         ],
         responses={
-            200: "Success (or an empty list if 404 from HIBP).",
-            400: "Missing/invalid email",
-            401: "No valid API key",
-            403: "Email domain mismatch",
-            502: "Upstream error"
+            200: "Success or empty array if not found",
+            404: "Uncommon scenario"
         }
     )
-    def get(self, request, email=None):  # <-- note the 'email' argument
+    def get(self, request, email=None):
         api_key_obj = request.auth
         if not api_key_obj:
-            return Response({"detail": "No valid API key provided."}, status=401)
-
-        domain = api_key_obj.allowed_domain
-        if not domain:
-            return Response({"detail": "API key has no domain."}, status=403)
+            return Response({"detail": "No valid API key."}, status=401)
 
         if not email:
-            return Response({"detail": "Missing email in path."}, status=400)
+            return Response({"detail": "No email specified."}, status=400)
 
-        # Check domain part
+        # Parse domain from email
         parts = email.rsplit('@', 1)
         if len(parts) != 2:
             return Response({"detail": "Invalid email format."}, status=400)
-
         email_domain = parts[1].lower()
-        if email_domain != domain.lower():
-            return Response(
-                {"detail": f"Email domain '{email_domain}' does not match '{domain}'."},
-                status=403
-            )
 
-        # Construct the upstream URL
+        # Check if the domain is authorized
+        if not api_key_obj.domains.filter(name=email_domain).exists():
+            raise PermissionDenied(f"API key not authorized for domain '{email_domain}'.")
+
         hibp_url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
-        hibp_headers = {
+        headers = {
             "hibp-api-key": settings.HIBP_API_KEY,
-            "User-Agent": "pwned_proxy_app/1.0"  # HIBP typically requires a User-Agent
+            "User-Agent": "pwned_proxy_app/1.0"
         }
 
         try:
-            hibp_response = requests.get(hibp_url, headers=hibp_headers)
-            # If 404 from HIBP means "no breaches," you can EITHER:
-            if hibp_response.status_code == 404:
-                # Option A: pass 404 straight through
-                # return Response([], status=404)
-
-                # Option B: convert 404 -> an empty array with 200
+            resp = requests.get(hibp_url, headers=headers)
+            if resp.status_code == 404:
                 return Response([], status=200)
-
-            # Otherwise, parse JSON (if 200 or other code)
-            return Response(hibp_response.json(), status=hibp_response.status_code)
-
+            return Response(resp.json(), status=resp.status_code)
         except requests.RequestException as e:
             return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
