@@ -22,7 +22,7 @@ class APIKeyAuthentication(BaseAuthentication):
     def authenticate(self, request):
         raw_key = request.headers.get('X-API-Key')
         if not raw_key:
-            return None  # No API key => DRF tries next auth class
+            return None  # No API key header => DRF tries next auth class
 
         hashed = hash_api_key(raw_key)
         try:
@@ -30,37 +30,51 @@ class APIKeyAuthentication(BaseAuthentication):
         except APIKey.DoesNotExist:
             raise AuthenticationFailed("Invalid API Key")
 
-        # Return an AnonymousUser plus the APIKey instance
+        # Return (user, token) in DRF. Using AnonymousUser since the API key doesn’t map to a specific user.
         return (AnonymousUser(), api_key)
 
 
 class AzureAdJWTAuthentication(BaseAuthentication):
     """
-    Validates 'Authorization: Bearer <token>' from Azure AD.
-    
-    Must set these env variables or read from Django settings:
-      - PUBLIC_AZURE_AD_TENANT_ID
-      - AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_CLIENT_ID  (the *API* app’s client ID)
+    Custom DRF authentication class for Azure AD JWT access tokens.
+    Validates the 'Authorization: Bearer <token>' header.
+
+    Environment variables used (from .env):
+      PUBLIC_AZURE_AD_TENANT_ID
+      AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_CLIENT_ID
+    """
+class AzureAdJWTAuthentication(BaseAuthentication):
+    """
+    Custom DRF authentication class for Azure AD JWT tokens.
+    Validates the 'Authorization: Bearer <token>' header.
+
+    Environment variables used:
+      - PUBLIC_AZURE_AD_TENANT_ID  (the tenant / directory ID)
+      - AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_CLIENT_ID (the Django API's client ID)
+        or whichever var you choose to store your API's client ID.
     """
 
     def authenticate(self, request):
+        # 1) Grab Authorization: Bearer <token>
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return None  # No auth => next authentication
+            return None  # Let DRF try next auth class if any
 
         parts = auth_header.split()
         if len(parts) != 2 or parts[0].lower() != 'bearer':
-            return None  # Not "Bearer ..." => next auth
+            return None  # Not a valid Bearer scheme
 
         token = parts[1]
 
+        # 2) Read tenant and audience from environment
         tenant_id = os.environ.get("PUBLIC_AZURE_AD_TENANT_ID", "")
+        # This needs to be the *API* client ID from your "AIT-SOC-MSAL-API-NGROK-DEV-VICRE" registration:
         audience = os.environ.get("AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_CLIENT_ID", "")
 
         if not tenant_id or not audience:
             raise AuthenticationFailed("Missing Azure AD tenant_id or client_id in environment variables.")
 
-        # JWKS URL for your tenant
+        # 3) Retrieve the signing keys from Azure to verify the token signature
         jwks_url = f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
         jwks_client = PyJWKClient(jwks_url)
 
@@ -70,21 +84,19 @@ class AzureAdJWTAuthentication(BaseAuthentication):
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
-                audience=audience,
+                audience=audience,  # must match your API client's Application ID
                 issuer=f"https://sts.windows.net/{tenant_id}/"
             )
         except Exception as exc:
             raise AuthenticationFailed(f"Token validation error: {str(exc)}")
 
-        # Extract user principal name/email
+        # 4) Determine the user's email/UPN from claims
         user_email = decoded.get("upn") or decoded.get("email") or decoded.get("preferred_username")
         if not user_email:
-            raise AuthenticationFailed("No identifiable email/UPN in token claims.")
+            raise AuthenticationFailed("No identifiable email or UPN in token claims.")
 
-        # Create or fetch local user
-        user, _ = User.objects.get_or_create(
-            username=user_email, 
-            defaults={"email": user_email}
-        )
+        # 5) Get or create a local Django user
+        user, _ = User.objects.get_or_create(username=user_email, defaults={"email": user_email})
 
+        # 6) Return (user, token) so DRF sees an authenticated user
         return (user, decoded)

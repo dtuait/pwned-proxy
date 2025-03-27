@@ -26,6 +26,16 @@ load_dotenv(dotenv_path=dotenv_path)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-upeu#zdbn--bfl&buv%@n9!@a*i-7!-(4kh^u9*+=ky2vrjx)('
 
+
+AZURE_AD_TENANT_ID = os.environ.get('PUBLIC_AZURE_AD_TENANT_ID', '')
+AZURE_AD_CLIENT_ID = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_CLIENT_ID', '')
+
+# The other variables are mostly for your future reference, e.g. if you want to call Graph:
+AZURE_AD_CLIENT_SECRET = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_CLIENT_SECRET', '')
+AZURE_AD_RESOURCE = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_RESOURCE', '')
+AZURE_AD_GRANT_TYPE = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_GRANT_TYPE', '')
+
+
 HIBP_API_KEY = os.getenv('HIBP_API_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -53,16 +63,19 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'api.authentication.APIKeyAuthentication'
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.AzureAdJWTAuthentication",  # Bearer tokens first
+        "api.authentication.APIKeyAuthentication"       # X-API-Key next
     ],
-    'DEFAULT_THROTTLE_CLASSES': [
-        'api.throttling.APIKeyRateThrottle'
+    # Possibly other DRF settings...
+    "DEFAULT_THROTTLE_CLASSES": [
+        "api.throttling.APIKeyRateThrottle"
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'apikey': '1000/day'
+    "DEFAULT_THROTTLE_RATES": {
+        "apikey": "1000/day"
     }
 }
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

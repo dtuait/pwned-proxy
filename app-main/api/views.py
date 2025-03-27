@@ -68,9 +68,9 @@ class CreateAPIKeyView(APIView):
         # 1) Fetch or 404 if group doesn't exist
         group = get_object_or_404(Group, name=group_name)
 
-        # Optional check: ensure the user is in that group
+        # (Optional) check: ensure the user is in that group
         # if not request.user.groups.filter(name=group_name).exists():
-        #    raise PermissionDenied("You are not a member of this group.")
+        #     raise PermissionDenied("You are not a member of this group.")
 
         # 2) Look up or create Domain objects
         domain_objs = []
@@ -86,8 +86,10 @@ class CreateAPIKeyView(APIView):
 
         return Response(
             {
-                "message": (f"Key created for group '{group_name}' "
-                            f"with {len(domain_list)} domain(s)"),
+                "message": (
+                    f"Key created for group '{group_name}' "
+                    f"with {len(domain_list)} domain(s)"
+                ),
                 "raw_key": raw_key
             },
             status=status.HTTP_201_CREATED
@@ -98,46 +100,58 @@ class StealerLogsProxyView(APIView):
     """
     GET /api/stealer-logs/<domain>/
 
-    Proxies to: https://haveibeenpwned.com/api/v3/stealerlogsbyemaildomain/<domain>
-    We check if <domain> is in api_key.domains. If yes, we proxy the request.
-    Otherwise, 403 forbidden.
+    Previously, we only allowed access via API key (checking the domain is in api_key.domains).
+    Now we also allow Azure AD tokens. If the request.auth is an APIKey, we do domain checks.
+    If the request.user is an authenticated Azure AD user, we skip domain checks (or implement your own).
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /stealerlogsbyemaildomain/<domain>. Domain must be in APIKey.domains.",
+        operation_description="Proxy to /stealerlogsbyemaildomain/<domain>. Domain must be in APIKey.domains if using X-API-Key.",
         manual_parameters=[
             openapi.Parameter(
                 name='domain',
                 in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
-                description='Domain to look up (e.g. "dtu.dk"). Must be in APIKey.domains.'
+                description='Domain to look up (e.g. "dtu.dk").'
             ),
             openapi.Parameter(
                 name='X-API-Key',
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
-                required=True,
-                description='Your raw API key'
+                required=False,
+                description='Your raw API key (if using API-key auth).'
             ),
         ]
     )
     def get(self, request, domain=None):
-        api_key_obj = request.auth
-        if not api_key_obj:
-            return Response({"detail": "No valid API key."}, status=401)
+        # 1) Check if request.auth is an APIKey or something else (like decoded JWT)
+        if isinstance(request.auth, APIKey):
+            #  -- API KEY LOGIC --
+            api_key_obj = request.auth
 
-        # Ensure domain is in the M2M set
-        if not domain or not api_key_obj.domains.filter(name=domain).exists():
-            raise PermissionDenied(f"API key not authorized for domain '{domain}'.")
+            # Ensure domain is in the M2M set
+            if not domain or not api_key_obj.domains.filter(name=domain).exists():
+                raise PermissionDenied(f"API key not authorized for domain '{domain}'")
 
-        # Proxy to HIBP
+        else:
+            #  -- AZURE AD LOGIC --
+            if not request.user.is_authenticated:
+                return Response({"detail": "No valid API key or Bearer token."}, status=401)
+            # Option A) Let any Azure AD user pass:
+            # pass
+
+            # Option B) Check user’s email domain or group membership if needed:
+            # user_email_domain = request.user.email.rsplit('@', 1)[-1].lower() if request.user.email else ""
+            # if user_email_domain != domain.lower():
+            #     raise PermissionDenied(f"User not authorized for domain '{domain}'")
+
+        # 2) If we reach here, the user is authorized. We do the proxy to HIBP:
         hibp_url = f"https://haveibeenpwned.com/api/v3/stealerlogsbyemaildomain/{domain}"
         headers = {
             "hibp-api-key": settings.HIBP_API_KEY,
             "User-Agent": "pwned_proxy_app/1.0"
         }
-
         try:
             resp = requests.get(hibp_url, headers=headers)
             return Response(resp.json(), status=resp.status_code)
@@ -149,12 +163,12 @@ class BreachedDomainProxyView(APIView):
     """
     GET /api/breached-domain/<domain>/
 
-    Proxies to: https://haveibeenpwned.com/api/v3/breacheddomain/<domain>
-    We check if <domain> is in api_key.domains. If yes, we proxy. Otherwise, 403.
+    Same logic as above: if request.auth is APIKey, domain must be in api_key.domains.
+    Otherwise, if Azure AD user, skip or do your own domain check.
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /breacheddomain/<domain>. Domain must be in the APIKey.",
+        operation_description="Proxy to /breacheddomain/<domain>. Domain must be in the APIKey if using X-API-Key.",
         manual_parameters=[
             openapi.Parameter(
                 name='domain',
@@ -167,18 +181,23 @@ class BreachedDomainProxyView(APIView):
                 name='X-API-Key',
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
-                required=True
+                required=False
             ),
         ]
     )
     def get(self, request, domain=None):
-        api_key_obj = request.auth
-        if not api_key_obj:
-            return Response({"detail": "No valid API key."}, status=401)
+        if isinstance(request.auth, APIKey):
+            # API Key logic
+            api_key_obj = request.auth
+            if not domain or not api_key_obj.domains.filter(name=domain).exists():
+                raise PermissionDenied(f"API key not authorized for domain '{domain}'")
+        else:
+            # Azure AD logic
+            if not request.user.is_authenticated:
+                return Response({"detail": "No valid credentials."}, status=401)
+            # You may do a domain check based on user.email or skip it.
 
-        if not domain or not api_key_obj.domains.filter(name=domain).exists():
-            raise PermissionDenied(f"API key not authorized for domain '{domain}'.")
-
+        # Proxy to HIBP
         hibp_url = f"https://haveibeenpwned.com/api/v3/breacheddomain/{domain}"
         headers = {
             "hibp-api-key": settings.HIBP_API_KEY,
@@ -196,13 +215,12 @@ class BreachedAccountProxyView(APIView):
     """
     GET /api/breached-account/<email>
 
-    Proxies to: https://haveibeenpwned.com/api/v3/breachedaccount/<email>
-    The domain of the <email> must be in api_key.domains.
-    If HIBP says 404 = "not found," we convert to empty array w/ 200.
+    The domain of the <email> must be in api_key.domains (if using X-API-Key).
+    For Azure AD Bearer tokens, we skip domain checks or implement your own logic.
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /breachedaccount/<email>. Email's domain must be in APIKey.domains.",
+        operation_description="Proxy to /breachedaccount/<email>. If X-API-Key, email domain must be in APIKey.domains. Azure AD can skip or add custom checks.",
         manual_parameters=[
             openapi.Parameter(
                 name='email',
@@ -215,7 +233,7 @@ class BreachedAccountProxyView(APIView):
                 name='X-API-Key',
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
-                required=True
+                required=False
             ),
         ],
         responses={
@@ -224,22 +242,27 @@ class BreachedAccountProxyView(APIView):
         }
     )
     def get(self, request, email=None):
-        api_key_obj = request.auth
-        if not api_key_obj:
-            return Response({"detail": "No valid API key."}, status=401)
-
         if not email:
             return Response({"detail": "No email specified."}, status=400)
 
-        # Parse domain from email
-        parts = email.rsplit('@', 1)
-        if len(parts) != 2:
-            return Response({"detail": "Invalid email format."}, status=400)
-        email_domain = parts[1].lower()
+        if isinstance(request.auth, APIKey):
+            # -- API Key logic --
+            api_key_obj = request.auth
+            parts = email.rsplit('@', 1)
+            if len(parts) != 2:
+                return Response({"detail": "Invalid email format."}, status=400)
+            email_domain = parts[1].lower()
 
-        # Check if the domain is authorized
-        if not api_key_obj.domains.filter(name=email_domain).exists():
-            raise PermissionDenied(f"API key not authorized for domain '{email_domain}'.")
+            # Check if the domain is authorized
+            if not api_key_obj.domains.filter(name=email_domain).exists():
+                raise PermissionDenied(f"API key not authorized for domain '{email_domain}'")
+
+        else:
+            # -- Azure AD logic --
+            if not request.user.is_authenticated:
+                return Response({"detail": "No valid credentials."}, status=401)
+            # Optionally parse the user’s domain from request.user.email and compare to `email`.
+            # For now, skip domain checks.
 
         hibp_url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
         headers = {
