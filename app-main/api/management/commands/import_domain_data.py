@@ -8,8 +8,6 @@ from django.utils.dateparse import parse_datetime
 
 from api.models import Domain, HIBPKey
 
-# Optionally, you might load the API key from settings or env variables
-HAVEIBEENPWNED_API_KEY = "SECRET"
 API_URL = "https://haveibeenpwned.com/api/v3/subscribeddomains"
 
 class Command(BaseCommand):

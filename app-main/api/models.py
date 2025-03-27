@@ -115,16 +115,41 @@ class APIKey(models.Model):
 
 
 
+# file: api/models.py
+
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 class HIBPKey(models.Model):
     """
-    Stores HIBP API keys so that you can manage them via the admin.
-    You can store multiple keys if you wish.
+    Model that allows only ONE record.
     """
     api_key = models.CharField(max_length=255, unique=True)
-    description = models.CharField(max_length=255, blank=True, null=True,
-                                   help_text="Optional label or notes for this key.")
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Optional label or notes for this key."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        # Display either the description (if present) or the beginning of the key
         return self.description or f"HIBP Key: {self.api_key[:6]}..."
+
+    def clean(self):
+        """
+        Check if we're trying to create more than one HIBPKey record.
+        """
+        # If self.pk is None, it means we're creating a new record.
+        # If HIBPKey.objects.exists() is True, it means at least one record
+        # already exists. So we raise an error to block the save.
+        if not self.pk and HIBPKey.objects.exists():
+            raise ValidationError("Only one HIBPKey entry is allowed.")
+
+    def save(self, *args, **kwargs):
+        """
+        Call self.clean() before actually saving.
+        """
+        self.clean()
+        super().save(*args, **kwargs)
