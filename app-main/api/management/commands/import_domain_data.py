@@ -1,92 +1,54 @@
+# file: app-main/api/management/commands/import_domain_data.py
+
 import json
-from datetime import datetime
+import urllib.request
+import urllib.error
 from django.core.management.base import BaseCommand
 from django.utils.dateparse import parse_datetime
 
 from api.models import Domain
 
-DOMAINS_JSON = [
-    {
-        "DomainName": "adm.ku.dk",
-        "PwnCount": 632,
-        "PwnCountExcludingSpamLists": 606,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 541,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "cbs.dk",
-        "PwnCount": 21212,
-        "PwnCountExcludingSpamLists": 5406,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 3715,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "cert.dk",
-        "PwnCount": None,
-        "PwnCountExcludingSpamLists": None,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": None,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "deic.dk",
-        "PwnCount": 45,
-        "PwnCountExcludingSpamLists": 41,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 31,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "dtu.dk",
-        "PwnCount": 6092,
-        "PwnCountExcludingSpamLists": 5553,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 5553,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "itu.dk",
-        "PwnCount": 8912,
-        "PwnCountExcludingSpamLists": 4074,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 3618,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "nbi.dk",
-        "PwnCount": 420,
-        "PwnCountExcludingSpamLists": 386,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 386,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "nbi.ku.dk",
-        "PwnCount": 107,
-        "PwnCountExcludingSpamLists": 103,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 103,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    },
-    {
-        "DomainName": "ruc.dk",
-        "PwnCount": 9550,
-        "PwnCountExcludingSpamLists": 9317,
-        "PwnCountExcludingSpamListsAtLastSubscriptionRenewal": 8280,
-        "NextSubscriptionRenewal": "2025-03-28T11:18:21"
-    }
-]
-
+# Optionally, you might load the API key from settings or env variables
+HAVEIBEENPWNED_API_KEY = "SECRET"
+API_URL = "https://haveibeenpwned.com/api/v3/subscribeddomains"
 
 class Command(BaseCommand):
-    help = "Import or update domain records from a predefined JSON list."
+    help = "Import or update domain records from the haveibeenpwned API, and remove any domains not found."
 
     def handle(self, *args, **options):
-        for domain_data in DOMAINS_JSON:
+        # 1) Fetch the JSON from the remote API
+        try:
+            req = urllib.request.Request(
+                API_URL,
+                headers={
+                    "hibp-api-key": HAVEIBEENPWNED_API_KEY,
+                    # Only include the cookie if absolutely necessary; often it is not needed:
+                    # "Cookie": "__cf_bm=zFzrNvqPVQQB5tpa9LXzzbgEPleC6R5iaI2bK15t41w-1743066809-1.0.1.1-aH9URPoMOmYv51cCJexVEdxfzkpPTOoZBiaP49QZDV1qyoHERolMYw8U2JqgwS7IBDY3npZRaAB4px5SoPDlnLNr_G7DGPZY2LhJtZXkE.8"
+                }
+            )
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except urllib.error.URLError as e:
+            self.stderr.write(self.style.ERROR(f"Error fetching domains from the API: {e}"))
+            return
+
+        # 2) Build a set of domain names returned by the API (for removal of old ones)
+        returned_domain_names = set()
+
+        # 3) Loop over the data and update_or_create each domain
+        for domain_data in data:
             domain_name = domain_data["DomainName"]
             pwn_count = domain_data["PwnCount"]
             pwn_excl = domain_data["PwnCountExcludingSpamLists"]
             pwn_renewal = domain_data["PwnCountExcludingSpamListsAtLastSubscriptionRenewal"]
             renewal_str = domain_data["NextSubscriptionRenewal"]
 
-            # Parse the date/time string if not None
+            # Parse the date/time string if present
             next_renewal = None
             if renewal_str is not None:
                 next_renewal = parse_datetime(renewal_str)
+
+            returned_domain_names.add(domain_name)
 
             obj, created = Domain.objects.update_or_create(
                 name=domain_name,
@@ -97,11 +59,17 @@ class Command(BaseCommand):
                     "next_subscription_renewal": next_renewal,
                 },
             )
-
             if created:
                 self.stdout.write(self.style.SUCCESS(f"Created domain: {domain_name}"))
             else:
                 self.stdout.write(self.style.WARNING(f"Updated domain: {domain_name}"))
 
-        self.stdout.write(self.style.SUCCESS("Finished importing domain data."))
+        # 4) Remove any domains **not** in the returned list
+        #    (This also removes them from any M2M relationships, e.g. APIKey.domains)
+        deleted_count, _ = Domain.objects.exclude(name__in=returned_domain_names).delete()
+        if deleted_count > 0:
+            self.stdout.write(
+                self.style.WARNING(f"Deleted {deleted_count} domain(s) not in API results.")
+            )
 
+        self.stdout.write(self.style.SUCCESS("Finished importing domain data from API."))

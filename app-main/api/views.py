@@ -134,17 +134,17 @@ class StealerLogsProxyView(APIView):
             if not domain or not api_key_obj.domains.filter(name=domain).exists():
                 raise PermissionDenied(f"API key not authorized for domain '{domain}'")
 
-        else:
-            #  -- AZURE AD LOGIC --
-            if not request.user.is_authenticated:
-                return Response({"detail": "No valid API key or Bearer token."}, status=401)
-            # Option A) Let any Azure AD user pass:
-            # pass
+        # else:
+        #     #  -- AZURE AD LOGIC --
+        #     if not request.user.is_authenticated:
+        #         return Response({"detail": "No valid API key or Bearer token."}, status=401)
+        #     # Option A) Let any Azure AD user pass:
+        #     # pass
 
-            # Option B) Check user’s email domain or group membership if needed:
-            # user_email_domain = request.user.email.rsplit('@', 1)[-1].lower() if request.user.email else ""
-            # if user_email_domain != domain.lower():
-            #     raise PermissionDenied(f"User not authorized for domain '{domain}'")
+        #     # Option B) Check user’s email domain or group membership if needed:
+        #     # user_email_domain = request.user.email.rsplit('@', 1)[-1].lower() if request.user.email else ""
+        #     # if user_email_domain != domain.lower():
+        #     #     raise PermissionDenied(f"User not authorized for domain '{domain}'")
 
         # 2) If we reach here, the user is authorized. We do the proxy to HIBP:
         hibp_url = f"https://haveibeenpwned.com/api/v3/stealerlogsbyemaildomain/{domain}"
