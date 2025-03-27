@@ -83,3 +83,22 @@ class DomainAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Disable deletes
         return True
+
+
+
+# file: api/admin.py
+
+from django.contrib import admin, messages
+from django.core.management import call_command
+from django.shortcuts import redirect
+from django.urls import path
+
+from .models import APIKey, Domain, generate_api_key, hash_api_key, HIBPKey
+
+@admin.register(HIBPKey)
+class HIBPKeyAdmin(admin.ModelAdmin):
+    """
+    Allows admin users to add/remove HIBP API keys.
+    """
+    list_display = ('__str__', 'api_key', 'created_at')
+    search_fields = ('api_key', 'description')

@@ -112,3 +112,19 @@ class APIKey(models.Model):
             new_key.domains.set(domain_list)  # can be a list of Domain objects
 
         return new_key, raw_key
+
+
+
+class HIBPKey(models.Model):
+    """
+    Stores HIBP API keys so that you can manage them via the admin.
+    You can store multiple keys if you wish.
+    """
+    api_key = models.CharField(max_length=255, unique=True)
+    description = models.CharField(max_length=255, blank=True, null=True,
+                                   help_text="Optional label or notes for this key.")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        # Display either the description (if present) or the beginning of the key
+        return self.description or f"HIBP Key: {self.api_key[:6]}..."
