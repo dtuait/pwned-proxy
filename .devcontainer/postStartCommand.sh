@@ -10,7 +10,7 @@ curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
 
 # if /usr/src/project/app-main/.env.local and NGROK_AUTHTOKEN from /usr/src/project/app-main/.env.local exists then run
 if [ -f "/usr/src/project/.devcontainer/.env" ]; then
-  DEVCONTAINER_NGROK_AUTHTOKEN=$(grep -oP '^DEVCONTAINER_NGROK_AUTHTOKEN=\K.*' /usr/src/project/app-main/.env.local)
+  DEVCONTAINER_NGROK_AUTHTOKEN=$(grep -oP '^DEVCONTAINER_NGROK_AUTHTOKEN=\K.*' /usr/src/project/.devcontainer/.env)
   if [ -n "$DEVCONTAINER_NGROK_AUTHTOKEN" ]; then
     ngrok config add-authtoken "$DEVCONTAINER_NGROK_AUTHTOKEN"
   else

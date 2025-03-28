@@ -24,7 +24,7 @@ load_dotenv(dotenv_path=dotenv_path)
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-upeu#zdbn--bfl&buv%@n9!@a*i-7!-(4kh^u9*+=ky2vrjx)('
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 
 AZURE_AD_TENANT_ID = os.environ.get('PUBLIC_AZURE_AD_TENANT_ID', '')
@@ -64,7 +64,7 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "api.authentication.AzureAdJWTAuthentication",  # Bearer tokens first
+        # "api.authentication.AzureAdJWTAuthentication",  # Bearer tokens first
         "api.authentication.APIKeyAuthentication"       # X-API-Key next
     ],
     # Possibly other DRF settings...
