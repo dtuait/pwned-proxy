@@ -22,6 +22,20 @@
             "justMyCode": true
         },
         {
+            "name": "ServerLive: localhost_production_settings",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/app-main/manage.py",
+            "args": [
+                "runserver",
+                "0.0.0.0:8000",
+                "--settings",
+                "pwned_proxy.localhost_production_settings"
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+        {
             "name": "Browser: admin localhost",
             "runtimeExecutable": "C:\\Program Files\\chromium\\chrome-win\\chrome.exe",
             "request": "launch",

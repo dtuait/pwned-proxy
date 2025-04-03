@@ -13,3 +13,4 @@
 .bash_history
 .dotnet/
 app-main/db.sqlite3
+app-main/staticfiles/*
