@@ -18,7 +18,7 @@ services:
     depends_on: [db]
     
     volumes:
-      - ./:/usr/src/project:ro                # ← NEW – mount source read-only
+      - ../:/usr/src/project:ro                # ← NEW – mount source read-only
 
     labels:
       - traefik.enable=true
