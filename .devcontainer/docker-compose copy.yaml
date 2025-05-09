@@ -1,0 +1,60 @@
+services:
+  pwned-proxy-app-main:
+    image: dtuait/pwned-proxy-app-main:python-3.13-bullseye-django-5.1.6-myversion-1.0.2
+
+    container_name: pwned-proxy-app-main
+    user: "${CURRENT_UID:-1000}:${CURRENT_GID:-1000}"
+    volumes:
+      - ..:/usr/src/project      # Mount source code
+      - static-data:/usr/src/project/staticfiles
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      GIT_USER_NAME: "${GIT_USER_NAME}"
+      GIT_USER_EMAIL: "${GIT_USER_EMAIL}"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pwned-proxy-db:5432/${POSTGRES_DB}"
+
+    depends_on:
+      - pwned-proxy-db
+
+    # Automatically start Gunicorn on container startup,
+    # plus run migrations & collectstatic first
+    command: sleep infinity
+    # command: >
+    #   sh -c "
+    #     cd /usr/src/project/app-main &&
+    #     /usr/src/venvs/app-main/bin/python manage.py migrate &&
+    #     /usr/src/venvs/app-main/bin/python manage.py collectstatic --noinput &&
+    #     /usr/src/venvs/app-main/bin/gunicorn --env DJANGO_SETTINGS_MODULE=pwned_proxy.localhost_production_settings pwned_proxy.wsgi:application --bind 0.0.0.0:8000
+    #   "
+
+  pwned-proxy-nginx:
+      image: nginx:stable-alpine
+      container_name: pwned-proxy-nginx
+      depends_on:
+        - pwned-proxy-app-main
+      ports:
+        - "80:80"
+        - "81:81"
+      volumes:
+        - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+        - static-data:/usr/src/project/staticfiles
+        - ./index.html:/usr/share/nginx/html/dummy/index.html:ro
+        
+  pwned-proxy-db:
+    image: postgres:16-alpine
+    container_name: pwned-proxy-db
+    environment:
+      POSTGRES_USER:      "${POSTGRES_USER}"
+      POSTGRES_PASSWORD:  "${POSTGRES_PASSWORD}"
+      POSTGRES_DB:        "${POSTGRES_DB}"
+    ports:
+      - "5432:5432" # needs to be closed
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+  static-data:
+
