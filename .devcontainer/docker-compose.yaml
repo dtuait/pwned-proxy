@@ -1,18 +1,29 @@
-version: '3'
+version: "3.9"
+
 services:
   pwnedproxy_app:
     image: dtuait/pwned-proxy-app-main:python-3.13-bullseye-django-5.1.6-myversion-1.0.2
     container_name: pwnedproxy_app
-    env_file: .env                     # Load environment variables from .env
+    env_file: .env                    # ← your secret values
     restart: unless-stopped
-    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind :8000 myproject.wsgi:application"
-    # No ports section: use Traefik for external access
+
+    # ←–––––––– THE TWO LINES THAT MATTER ––––––––→
+    working_dir: /usr/src/project/app-main        # cd into the folder that *has* manage.py
+    command: |
+      sh -c "
+        /usr/src/venvs/app-main/bin/python manage.py migrate --noinput &&
+        /usr/src/venvs/app-main/bin/python manage.py collectstatic --noinput &&
+        /usr/src/venvs/app-main/bin/gunicorn \
+            --workers 3 --bind 0.0.0.0:8000 \
+            pwned_proxy.wsgi:application
+      "
+    # ⇠––––––––––––––––––––––––––––––––––––––––––––
+
     expose:
-      - "8000"                        # Expose Gunicorn port internally (Traefik will use this)
+      - "8000"                                     # Traefik will reach this port
     depends_on:
       - db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data  # (If the app image needs persistent storage for any data; not typically needed for Django app itself)
+
     labels:
       - traefik.enable=true
       - traefik.http.routers.pwnedproxy.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)
@@ -20,22 +31,24 @@ services:
       - traefik.http.routers.pwnedproxy.tls=true
       - traefik.http.routers.pwnedproxy.tls.certresolver=letsencrypt
       - traefik.http.services.pwnedproxy.loadbalancer.server.port=8000
-      # (Optional) Redirect HTTP to HTTPS:
+      # Optional HTTP→HTTPS redirect
       - traefik.http.routers.pwnedproxy-insecure.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)
       - traefik.http.routers.pwnedproxy-insecure.entryPoints=web
       - traefik.http.routers.pwnedproxy-insecure.middlewares=pwnedproxy-https-redirect
       - traefik.http.middlewares.pwnedproxy-https-redirect.redirectscheme.scheme=https
+
   db:
     image: postgres:14-alpine
     container_name: pwnedproxy_db
     restart: unless-stopped
-    env_file: .env                     # Use .env for PostgreSQL credentials
+    env_file: .env
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Persist database data
-    # No ports: do not expose 5432 publicly (only accessible within Docker network)
+      - postgres_data:/var/lib/postgresql/data      # persists the database
+    # no ports:5432 → DB stays internal
+
 volumes:
   postgres_data:
