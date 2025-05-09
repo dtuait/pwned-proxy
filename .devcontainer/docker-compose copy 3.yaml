@@ -1,16 +1,24 @@
-version: "3.9"
+version: '3.9'
 
 services:
   pwnedproxy_app:
-    build:
-      context: .                 # Coolify clones repo → builds inside it
-      dockerfile: Dockerfile.prod
-    image: pwnedproxy_app:latest # local tag; Coolify pushes to its registry
+    image: dtuait/pwned-proxy-app-main:python-3.13-bullseye-django-5.1.6-myversion-1.0.2
+    container_name: pwnedproxy_app
+
+    # ─── environment ────────────────────────────────────────────────────
     env_file: .env
     restart: unless-stopped
 
+    # ─── run everything atomically on one line ──────────────────────────
+    working_dir: /usr/src/app/app-main          # <── $MANAGE_DIR
+    entrypoint: /bin/sh                         # use BusyBox sh
+    command: -c "/usr/src/venvs/app-main/bin/python manage.py migrate --noinput && /usr/src/venvs/app-main/bin/python manage.py collectstatic --noinput &&  exec /usr/src/venvs/app-main/bin/gunicorn pwned_proxy.wsgi:application --bind 0.0.0.0:8000 "
+
     expose: ["8000"]
     depends_on: [db]
+    
+    volumes:
+      - ./:/usr/src/project:ro                # ← NEW – mount source read-only
 
     labels:
       - traefik.enable=true
@@ -26,8 +34,9 @@ services:
 
   db:
     image: postgres:14-alpine
-    env_file: .env
+    container_name: pwnedproxy_db
     restart: unless-stopped
+    env_file: .env
     environment:
       POSTGRES_DB:       ${POSTGRES_DB}
       POSTGRES_USER:     ${POSTGRES_USER}
