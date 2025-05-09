@@ -3,7 +3,7 @@ version: "3.9"
 services:
   pwnedproxy_app:
     build:
-      context: .                 # Coolify clones repo → builds inside it
+      context: .devcontainer/                 # Coolify clones repo → builds inside it
       dockerfile: Dockerfile.prod
     image: pwnedproxy_app:latest # local tag; Coolify pushes to its registry
     env_file: .env
