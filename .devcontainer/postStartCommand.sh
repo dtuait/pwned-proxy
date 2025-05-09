@@ -19,3 +19,5 @@ if [ -f "/usr/src/project/.devcontainer/.env" ]; then
 else
   echo ".env.local file not found"
 fi
+
+ngrok http --url=api.dtuaitsoc.ngrok.dev 3000

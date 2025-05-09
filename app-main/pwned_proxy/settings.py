@@ -36,7 +36,7 @@ AZURE_AD_RESOURCE = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_R
 AZURE_AD_GRANT_TYPE = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION_GRANT_TYPE', '')
 
 
-HIBP_API_KEY = os.getenv('HIBP_API_KEY')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
