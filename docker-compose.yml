@@ -1,10 +1,11 @@
 version: '3.9'
 services:
-  pwned-proxy-app-main:
+
+  pwned-proxy-app:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile.prod
-    container_name: pwned-proxy-app-main
+    container_name: pwned-proxy-app
     env_file: .env
     volumes:
       - static-data:/usr/src/project/staticfiles
@@ -15,7 +16,9 @@ services:
     image: nginx:stable-alpine
     container_name: pwned-proxy-nginx
     depends_on:
-      - pwned-proxy-app-main
+
+      - pwned-proxy-app
+
     ports:
       - "80:80"
       - "81:81"
