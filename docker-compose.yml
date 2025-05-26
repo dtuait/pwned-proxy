@@ -5,6 +5,8 @@ services:
       context: .
       dockerfile: .devcontainer/Dockerfile.prod
     env_file: .env
+    expose:
+      - "8000"
     volumes:
       - static-data:/usr/src/project/staticfiles
     depends_on:
