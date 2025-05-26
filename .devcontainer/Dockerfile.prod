@@ -6,7 +6,7 @@ COPY . /usr/src/project
 WORKDIR /usr/src/project/app-main   # this folder HAS manage.py now
 
 # Copy entrypoint script and run it at container start
-COPY entrypoint.sh /entrypoint.sh
+COPY --chmod=0755 entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Start the Django app via the entrypoint script
