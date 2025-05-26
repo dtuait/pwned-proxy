@@ -1,5 +1,6 @@
 version: '3.9'
 services:
+
   pwned-proxy-app:
     build:
       context: .
@@ -15,7 +16,9 @@ services:
     image: nginx:stable-alpine
     container_name: pwned-proxy-nginx
     depends_on:
+
       - pwned-proxy-app
+
     ports:
       - "80:80"
       - "81:81"
