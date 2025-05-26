@@ -1,0 +1,36 @@
+version: '3.9'
+services:
+  pwned-proxy-app-main:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile.prod
+    container_name: pwned-proxy-app-main
+    env_file: .env
+    volumes:
+      - static-data:/usr/src/project/staticfiles
+    depends_on:
+      - pwned-proxy-db
+
+  pwned-proxy-nginx:
+    image: nginx:stable-alpine
+    container_name: pwned-proxy-nginx
+    depends_on:
+      - pwned-proxy-app-main
+    ports:
+      - "80:80"
+      - "81:81"
+    volumes:
+      - .devcontainer/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static-data:/usr/src/project/staticfiles
+      - .devcontainer/index.html:/usr/share/nginx/html/dummy/index.html:ro
+
+  pwned-proxy-db:
+    image: postgres:16-alpine
+    container_name: pwned-proxy-db
+    env_file: .env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+  static-data:
