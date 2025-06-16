@@ -12,7 +12,15 @@ immediately.
 On first start the application will create a `.env` file with random values
 for the required secrets if none exists.  You can customise these settings by
 creating your own `.env` based on `./env.dev.example` or
-`./env.prod.example`.
+`./env.prod.example`.  A helper script is provided to generate the necessary
+files automatically:
+
+```bash
+./generate_env.sh
+```
+
+This populates `.env` and `.devcontainer/.env` using the example templates and
+should be run before starting Docker or the Dev Container.
 
 ## Running the stack
 
@@ -99,10 +107,10 @@ Django application.
 
 ## Developing with VS Code
 
-To test and iterate on the project inside a [Dev Container](https://containers.dev/), install VS&nbsp;Code with the "Dev Containers" extension. Then copy the example environment file and reopen the folder in the container:
+To test and iterate on the project inside a [Dev Container](https://containers.dev/), install VS Code with the "Dev Containers" extension. Then generate the environment file and reopen the folder in the container:
 
 ```bash
-cp .devcontainer/.env.example .devcontainer/.env
+./generate_env.sh devcontainer
 code . # open in VS Code and select 'Dev Containers: Reopen in Container'
 ```
 
