@@ -45,6 +45,19 @@ superuser credentials you provided.
 3. Open **Groups** and use the **Seed Groups** action to generate API keys for each predefined group. The keys are downloaded as a JSON file.
 4. Finally, visit `http://localhost:8000/` to open the Swagger start page and try out the API using the generated keys.
 
+## Running tests
+
+Unit tests verify that each endpoint respects API key permissions. The test suite
+uses the JSON produced by the **Seed Groups** admin action. A copy of this file
+is located at `app-main/api/tests/seeded_api_keys.json`.
+
+Execute the tests with:
+
+```bash
+PYTHONPATH=app-main DJANGO_SETTINGS_MODULE=pwned_proxy.test_settings \
+python manage.py test api
+```
+
 ## Deploying on Debian\u00a012
 
 Make sure Docker and Docker Compose are installed:
