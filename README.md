@@ -64,6 +64,20 @@ PYTHONPATH=app-main DJANGO_SETTINGS_MODULE=pwned_proxy.test_settings \
 python manage.py test api
 ```
 
+## Running integration tests with Docker Compose
+
+Integration tests can be executed inside the Docker environment. This
+spins up the PostgreSQL service and runs the Django test suite inside the
+`app` container.
+
+```bash
+./generate_env.sh
+docker compose build
+docker compose up -d db
+docker compose run --rm app /usr/src/venvs/app-main/bin/python manage.py test
+docker compose down -v
+```
+
 ## Deploying on Debian\u00a012
 
 Make sure Docker and Docker Compose are installed:
