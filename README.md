@@ -34,3 +34,45 @@ a superuser is created using the credentials from your `.env` file.
 You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the
 superuser credentials you provided.
+
+## Deploying on Debian\u00a012
+
+Make sure Docker and Docker Compose are installed:
+
+```bash
+sudo apt update
+sudo apt install docker.io docker-compose -y
+```
+
+Clone this repository and prepare your environment file as described above.
+You can then test the stack with:
+
+```bash
+docker compose up --build --abort-on-container-exit --remove-orphans && \
+docker compose down --volumes --remove-orphans
+```
+
+If everything starts correctly the application will exit once the containers
+are stopped.
+
+## Putting it behind Nginx for HTTPS
+
+Install Nginx on the host and configure it as a reverse proxy:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Use a tool like `certbot` to obtain TLS certificates and update the
+server block to listen on port `443` with SSL enabled. Once configured,
+requests to `https://example.com` will be forwarded to the Dockerized
+Django application.
