@@ -12,13 +12,14 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
+from envutils import ensure_env
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-dotenv_path = BASE_DIR / '..' / '.devcontainer' / '.env'
-load_dotenv(dotenv_path=dotenv_path)
+# Ensure required environment variables are present. This will load an existing
+# `.env` file if found or create one with generated defaults on first run.
+ensure_env(BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

@@ -8,15 +8,11 @@ immediately.
 ## Prerequisites
 
 - [Docker](https://www.docker.com/) and Docker Compose installed
-- A `.env` file based on `.devcontainer/.env.example`
 
-Copy the example environment file and fill in the required variables:
-
-```bash
-cp .devcontainer/.env.example .env
-# Edit .env to set POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
-# DJANGO_SUPERUSER_USERNAME and DJANGO_SUPERUSER_PASSWORD.
-```
+On first start the application will create a `.env` file with random values
+for the required secrets if none exists.  You can customise these settings by
+creating your own `.env` based on `./env.dev.example` or
+`./env.prod.example`.
 
 ## Running the stack
 
@@ -29,7 +25,8 @@ docker compose up --build
 The Django application will be available on port **8000**. It accepts
 requests for both `localhost` and `api.dtuaitsoc.ngrok.dev` thanks to the
 `ALLOWED_HOSTS` configuration. On first start, migrations are applied and
-a superuser is created using the credentials from your `.env` file.
+a superuser is created using the credentials from your `.env` file
+(whether generated or customised).
 The admin username and password will be echoed in the terminal when the
 containers start so you can copy them for login.
 
