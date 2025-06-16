@@ -23,4 +23,5 @@ class URLPatternsTest(SimpleTestCase):
             with self.subTest(name=name):
                 url = reverse(name, kwargs=kwargs)
                 resolver = resolve(url)
+                print(f"Resolved {name} -> {url} -> {resolver.func.view_class.__name__}")
                 self.assertEqual(resolver.func.view_class, view)
