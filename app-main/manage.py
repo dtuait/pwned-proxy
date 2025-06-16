@@ -2,6 +2,13 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+# When this script is executed inside the Docker image the working
+# directory is ``app-main`` which means modules located in the project
+# root are not on ``sys.path``. Add the parent directory so that the
+# ``envutils`` module can be imported by ``pwned_proxy.settings``.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 
 def main():

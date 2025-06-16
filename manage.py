@@ -2,6 +2,12 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+# When using Docker the working directory might not be the project root
+# (e.g. ``app-main``). Include the parent directory on ``sys.path`` so
+# that ``envutils`` can be imported by ``pwned_proxy.settings``.
+sys.path.append(str(Path(__file__).resolve().parent))
 
 
 def main():
