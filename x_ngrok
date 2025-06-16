@@ -1,1 +1,1 @@
-ngrok http --url=api.dtuaitsoc.ngrok.dev 3000
+ngrok http --url=dtuaitsoc.ngrok.dev 3000
