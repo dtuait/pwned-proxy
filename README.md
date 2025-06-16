@@ -99,3 +99,24 @@ Use a tool like `certbot` to obtain TLS certificates and update the
 server block to listen on port `443` with SSL enabled. Once configured,
 requests to `https://example.com` will be forwarded to the Dockerized
 Django application.
+
+## Developing with VS Code
+
+To test and iterate on the project inside a [Dev Container](https://containers.dev/), install VS&nbsp;Code with the "Dev Containers" extension. Then copy the example environment file and reopen the folder in the container:
+
+```bash
+cp .devcontainer/.env.example .devcontainer/.env
+code . # open in VS Code and select 'Dev Containers: Reopen in Container'
+```
+
+The container is defined by `.devcontainer/docker-compose.yaml` and automatically installs all dependencies.
+
+### Running the development server
+
+Use the **ServerLive: localhost_debug_true_settings** launch configuration from `.vscode/launch.json` (press **F5**). This runs:
+
+```bash
+python app-main/manage.py runserver 0.0.0.0:3000 --settings pwned_proxy.localhost_debug_true_settings
+```
+
+`localhost_debug_true_settings.py` enables `DEBUG` and relaxed CORS, so the app is available at <http://localhost:3000/> for interactive debugging.
