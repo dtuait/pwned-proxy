@@ -30,6 +30,8 @@ The Django application will be available on port **8000**. It accepts
 requests for both `localhost` and `api.dtuaitsoc.ngrok.dev` thanks to the
 `ALLOWED_HOSTS` configuration. On first start, migrations are applied and
 a superuser is created using the credentials from your `.env` file.
+The admin username and password will be echoed in the terminal when the
+containers start so you can copy them for login.
 
 You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the
