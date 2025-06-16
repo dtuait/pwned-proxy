@@ -35,6 +35,14 @@ You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the
 superuser credentials you provided.
 
+### First-time setup
+
+1. After logging into the Django admin, add your [Have I Been Pwned](https://haveibeenpwned.com/api) API key:
+   - Navigate to **HIBP Keys** and create a new key with the value you received from HIBP.
+2. Go to **Domains** and click **Import from HIBP**. This populates the database with the latest domain data.
+3. Open **Groups** and use the **Seed Groups** action to generate API keys for each predefined group. The keys are downloaded as a JSON file.
+4. Finally, visit `http://localhost:8000/` to open the Swagger start page and try out the API using the generated keys.
+
 ## Deploying on Debian\u00a012
 
 Make sure Docker and Docker Compose are installed:
