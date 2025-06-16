@@ -11,6 +11,10 @@ RUN /usr/src/venvs/app-main/bin/pip install --no-cache-dir -r ../.devcontainer/r
 # Copy entrypoint script and run it at container start
 COPY --chmod=0755 entrypoint.sh /entrypoint.sh
 
+# Ensure the staticfiles directory exists with write permissions. This allows
+# collectstatic to succeed when the container runs as a non-root user.
+RUN install -d -m 0755 /usr/src/project/app-main/staticfiles
+
 # Start the Django app via the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
 
