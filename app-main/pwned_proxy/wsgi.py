@@ -8,6 +8,13 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/wsgi/
 """
 
 import os
+import sys
+from pathlib import Path
+
+# When executed inside Docker the working directory is ``app-main``.
+# Include the parent directory on ``sys.path`` so that ``envutils`` can be
+# imported by ``pwned_proxy.settings``.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from django.core.wsgi import get_wsgi_application
 
