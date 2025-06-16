@@ -43,7 +43,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "api.dtuaitsoc.ngrok.dev",
+    "dtuaitsoc.ngrok.dev",
 ]
 
 
@@ -115,10 +115,10 @@ WSGI_APPLICATION = 'pwned_proxy.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'pwned_proxy_db'),
+        'NAME': os.getenv('POSTGRES_DB', 'db'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': 'pwned-proxy-db',  # matches docker-compose service name
+        'HOST': 'db',  # matches docker-compose service name
         'PORT': '5432',
     }
 }
@@ -170,6 +170,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = [
     "https://api.dtuaitsoc.ngrok.dev",
+    "https://dtuaitsoc.ngrok.dev",
     # add other domains if necessary
 ]
 

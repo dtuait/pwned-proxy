@@ -3,7 +3,6 @@ DEBUG = True
 
 # CSRF_COOKIE_DOMAIN = 'vicre-nextjs-app01.ngrok.app'
 CSRF_TRUSTED_ORIGINS = [
-    'https://api.dtuaitsoc.ngrok.dev',
     'http://localhost:3000'
 ]
 
