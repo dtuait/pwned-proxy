@@ -42,7 +42,7 @@
             "type": "msedge",
             "url": "http://localhost:6081/admin",
             "webRoot": "${workspaceFolder}/app-main",
-            "disableNetworkCache": true,
-        },
+            "disableNetworkCache": true
+        }
     ]
 }
