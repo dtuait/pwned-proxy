@@ -14,9 +14,13 @@ User = get_user_model()
 
 username = os.getenv('DJANGO_SUPERUSER_USERNAME', 'admin')
 email = os.getenv('DJANGO_SUPERUSER_EMAIL', '')
+password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
 
 if not User.objects.filter(username=username).exists():
-    password = ''.join(random.SystemRandom().choices(string.ascii_letters + string.digits, k=32))
+    if not password:
+        password = ''.join(
+            random.SystemRandom().choices(string.ascii_letters + string.digits, k=32)
+        )
     User.objects.create_superuser(username=username, email=email, password=password)
     print('Created default admin user:', username)
     print('Password:', password)
