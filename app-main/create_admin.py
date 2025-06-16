@@ -1,7 +1,14 @@
 import os
+import sys
 import django
 import random
 import string
+from pathlib import Path
+
+# When executed inside Docker the working directory is ``app-main``.
+# Include the parent directory on ``sys.path`` so that ``envutils`` can be
+# imported by ``pwned_proxy.settings``.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pwned_proxy.settings')
 
