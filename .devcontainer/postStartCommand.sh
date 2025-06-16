@@ -2,11 +2,14 @@
 echo "Running postStartCommand.sh..."
 
 curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-	| sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
-	&& echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
-	| sudo tee /etc/apt/sources.list.d/ngrok.list \
-	&& sudo apt update \
-	&& sudo apt install ngrok
+        | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+        && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+        | sudo tee /etc/apt/sources.list.d/ngrok.list \
+        && sudo apt update \
+        && sudo apt install ngrok
+
+# Ensure Python dependencies are installed inside the container
+/usr/src/venvs/app-main/bin/pip install --no-cache-dir -r /usr/src/project/.devcontainer/requirements.txt
 
 # if /usr/src/project/app-main/.env.local and NGROK_AUTHTOKEN from /usr/src/project/app-main/.env.local exists then run
 ENV_FILE="/usr/src/project/.devcontainer/.env"
