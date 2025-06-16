@@ -3,7 +3,7 @@ FROM dtuait/pwned-proxy-app-main:python-3.13-bullseye-django-5.1.6-myversion-1.0
 
 # Copy project source into the image
 COPY . /usr/src/project
-WORKDIR /usr/src/project/app-main   # this folder HAS manage.py now
+WORKDIR /usr/src/project/app-main
 
 # Copy entrypoint script and run it at container start
 COPY --chmod=0755 entrypoint.sh /entrypoint.sh
