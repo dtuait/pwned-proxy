@@ -9,6 +9,7 @@ immediately.
 
 - [Docker](https://www.docker.com/) and Docker Compose installed
 
+
 On first start the application will create a `.env` file with random values
 for the required secrets if none exists.  You can customise these settings by
 creating your own `.env` based on `./env.dev.example` or
@@ -22,6 +23,7 @@ files automatically:
 This populates `.env` and `.devcontainer/.env` using the example templates and
 should be run before starting Docker or the Dev Container.
 
+
 ## Running the stack
 
 Build and start the containers:
@@ -32,11 +34,10 @@ docker compose up --build
 
 The Django application will be available on port **8000**. It accepts
 requests for both `localhost` and `api.dtuaitsoc.ngrok.dev` thanks to the
-`ALLOWED_HOSTS` configuration. On first start, migrations are applied and
-a superuser is created using the credentials from your `.env` file
-(whether generated or customised).
-The admin username and password will be echoed in the terminal when the
-containers start so you can copy them for login.
+`ALLOWED_HOSTS` configuration. On first start, migrations are applied and a
+superuser is created automatically. If the `.env` file was generated, the
+admin username and password are printed and stored in that file so you can
+reuse them across restarts.
 
 You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the

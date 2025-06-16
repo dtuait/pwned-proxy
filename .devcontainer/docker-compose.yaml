@@ -6,7 +6,10 @@ services:
     container_name: pwned-proxy-app-main
 
     # ─── environment ────────────────────────────────────────────────────
-    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     restart: unless-stopped
 
     # ─── run everything atomically on one line ──────────────────────────
@@ -39,11 +42,10 @@ services:
     image: postgres:14-alpine
     container_name: pwnedproxy_db
     restart: unless-stopped
-    env_file: .env
     environment:
-      POSTGRES_DB:       ${POSTGRES_DB}
-      POSTGRES_USER:     ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB:-db}
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
