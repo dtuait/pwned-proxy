@@ -60,7 +60,10 @@ is located at `app-main/api/tests/seeded_api_keys.json`.
 Execute the tests with:
 
 ```bash
-PYTHONPATH=app-main DJANGO_SETTINGS_MODULE=pwned_proxy.test_settings \
+# Install dependencies if running outside Docker
+pip install -r .devcontainer/requirements.txt
+
+PYTHONPATH=app-main DJANGO_SETTINGS_MODULE=pwned_proxy.settings \
 python manage.py test api
 ```
 
