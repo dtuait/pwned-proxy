@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+/usr/src/venvs/app-main/bin/python wait_for_db.py
+
 /usr/src/venvs/app-main/bin/python manage.py migrate --noinput
 /usr/src/venvs/app-main/bin/python manage.py collectstatic --noinput
 /usr/src/venvs/app-main/bin/python create_admin.py
