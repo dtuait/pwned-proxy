@@ -7,6 +7,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from urllib.parse import urlencode
 
 from .models import APIKey, Domain
 from .utils import get_hibp_key
@@ -37,6 +38,7 @@ def hibp_get(path: str):
 # ---------------------------------------------------------------------
 # Proxy endpoints
 # ---------------------------------------------------------------------
+
 
 class BreachedDomainProxyView(APIView):
     """
@@ -118,7 +120,9 @@ class BreachedAccountProxyView(APIView):
 
         api_key_obj = request.auth
         if not api_key_obj.domains.filter(name=email_domain).exists():
-            raise PermissionDenied(f"API key not authorised for domain '{email_domain}'")
+            raise PermissionDenied(
+                f"API key not authorised for domain '{email_domain}'"
+            )
 
         resp = hibp_get(f"breachedaccount/{requests.utils.requote_uri(email)}")
         if resp.status_code == 404:
@@ -132,6 +136,7 @@ class BreachedAccountProxyView(APIView):
 # ---------------------------------------------------------------------
 # Extended HIBP v3 coverage
 # ---------------------------------------------------------------------
+
 
 class PasteAccountProxyView(APIView):
     """
@@ -216,7 +221,9 @@ class SubscribedDomainsProxyView(APIView):
             return Response(resp.json(), status=resp.status_code)
 
         data = resp.json()
-        filtered = [item for item in data if item.get("DomainName", "").lower() in allowed]
+        filtered = [
+            item for item in data if item.get("DomainName", "").lower() in allowed
+        ]
         return Response(filtered, status=200)
 
 
@@ -300,7 +307,9 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
         if not api_key_obj.domains.filter(name=domain).exists():
             raise PermissionDenied(f"API key not authorised for '{domain}'")
 
-        resp = hibp_get(f"stealerlogsbywebsitedomain/{requests.utils.requote_uri(domain)}")
+        resp = hibp_get(
+            f"stealerlogsbywebsitedomain/{requests.utils.requote_uri(domain)}"
+        )
         try:
             return Response(resp.json(), status=resp.status_code)
         except ValueError:
@@ -334,6 +343,116 @@ class StealerLogsByEmailDomainProxyView(APIView):
             raise PermissionDenied("API key has no associated domains.")
 
         resp = hibp_get(f"stealerlogsbyemaildomain/{domain_obj.name}")
+        try:
+            return Response(resp.json(), status=resp.status_code)
+        except ValueError:
+            return Response(resp.text, status=resp.status_code)
+
+
+class AllBreachesProxyView(APIView):
+    """GET /api/breaches/"""
+
+    @swagger_auto_schema(
+        operation_description=(
+            "Proxy to /breaches on HIBP. Supports optional Domain and"
+            " IsSpamList query parameters."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                name="Domain",
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                required=False,
+            ),
+            openapi.Parameter(
+                name="IsSpamList",
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_BOOLEAN,
+                required=False,
+            ),
+        ],
+    )
+    def get(self, request):
+        query = {}
+        if "Domain" in request.query_params:
+            query["Domain"] = request.query_params["Domain"]
+        if "IsSpamList" in request.query_params:
+            query["IsSpamList"] = request.query_params["IsSpamList"]
+        path = "breaches"
+        if query:
+            path += f"?{urlencode(query)}"
+        resp = hibp_get(path)
+        try:
+            return Response(resp.json(), status=resp.status_code)
+        except ValueError:
+            return Response(resp.text, status=resp.status_code)
+
+
+class SingleBreachProxyView(APIView):
+    """GET /api/breach/<name>/"""
+
+    @swagger_auto_schema(
+        operation_description="Proxy to /breach/{name} on HIBP.",
+        manual_parameters=[
+            openapi.Parameter(
+                name="name",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                required=True,
+                description="Breach name, e.g. Adobe",
+            ),
+        ],
+    )
+    def get(self, request, name: str = None):
+        resp = hibp_get(f"breach/{requests.utils.requote_uri(name)}")
+        try:
+            return Response(resp.json(), status=resp.status_code)
+        except ValueError:
+            return Response(resp.text, status=resp.status_code)
+
+
+class LatestBreachProxyView(APIView):
+    """GET /api/latest-breach/"""
+
+    @swagger_auto_schema(operation_description="Proxy to /latestbreach on HIBP.")
+    def get(self, request):
+        resp = hibp_get("latestbreach")
+        try:
+            return Response(resp.json(), status=resp.status_code)
+        except ValueError:
+            return Response(resp.text, status=resp.status_code)
+
+
+class DataClassesProxyView(APIView):
+    """GET /api/data-classes/"""
+
+    @swagger_auto_schema(operation_description="Proxy to /dataclasses on HIBP.")
+    def get(self, request):
+        resp = hibp_get("dataclasses")
+        try:
+            return Response(resp.json(), status=resp.status_code)
+        except ValueError:
+            return Response(resp.text, status=resp.status_code)
+
+
+class SubscriptionStatusProxyView(APIView):
+    """GET /api/subscription-status/"""
+
+    @swagger_auto_schema(
+        operation_description="Proxy to /subscription/status on HIBP.",
+        manual_parameters=[
+            openapi.Parameter(
+                name="X-API-Key",
+                in_=openapi.IN_HEADER,
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+    )
+    def get(self, request):
+        if not request.auth:
+            return Response({"detail": "No valid API key."}, status=401)
+        resp = hibp_get("subscription/status")
         try:
             return Response(resp.json(), status=resp.status_code)
         except ValueError:
