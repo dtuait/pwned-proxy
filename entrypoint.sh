@@ -1,6 +1,14 @@
 #!/bin/sh
 set -e
 
+
+# Ensure we can write to the STATIC_ROOT directory even if a
+# stale container image left it owned by root. This mirrors the
+# permissions set during image build and allows "docker compose up"
+# without a rebuild to succeed.
+STATIC_ROOT=/usr/src/project/app-main/staticfiles
+sudo install -d -m 0755 "$STATIC_ROOT" && sudo chown appuser:appuser "$STATIC_ROOT"
+
 /usr/src/venvs/app-main/bin/python wait_for_db.py
 
 /usr/src/venvs/app-main/bin/python manage.py migrate --noinput
