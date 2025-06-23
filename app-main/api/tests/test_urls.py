@@ -7,8 +7,8 @@ class URLPatternsTest(SimpleTestCase):
     def test_all_endpoints_resolve(self):
         tests = [
             ("breached-domain", {"domain": "dtu.dk"}, views.BreachedDomainProxyView),
-            ("breached-account", {"email": "user@dtu.dk"}, views.BreachedAccountProxyView),
-            ("paste-account", {"email": "user@dtu.dk"}, views.PasteAccountProxyView),
+            ("breached-account", {"account": "user@dtu.dk"}, views.BreachedAccountProxyView),
+            ("paste-account", {"account": "user@dtu.dk"}, views.PasteAccountProxyView),
             ("subscribed-domains", {}, views.SubscribedDomainsProxyView),
             ("stealer-logs-by-email", {}, views.StealerLogsByEmailProxyView),
             ("stealer-logs-by-website", {}, views.StealerLogsByWebsiteDomainProxyView),

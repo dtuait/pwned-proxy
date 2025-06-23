@@ -21,43 +21,43 @@ from .views import (
 urlpatterns = [
     # Core
     path(
-        "breacheddomain/<str:domain>/",
+        "breacheddomain/<str:domain>",
         BreachedDomainProxyView.as_view(),
         name="breached-domain",
     ),
     path(
-        "breachedaccount/<path:email>/",
+        "breachedaccount/<path:account>",
         BreachedAccountProxyView.as_view(),
         name="breached-account",
     ),
     # Extended
-    path("pasteaccount/<path:email>/", PasteAccountProxyView.as_view(), name="paste-account"),
+    path("pasteaccount/<path:account>", PasteAccountProxyView.as_view(), name="paste-account"),
     path(
-        "subscribeddomains/",
+        "subscribeddomains",
         SubscribedDomainsProxyView.as_view(),
         name="subscribed-domains",
     ),
     path(
-        "stealer-logs-email/",
+        "stealer-logs-email",
         StealerLogsByEmailProxyView.as_view(),
         name="stealer-logs-by-email",
     ),
     path(
-        "stealer-logs-website/",
+        "stealer-logs-website",
         StealerLogsByWebsiteDomainProxyView.as_view(),
         name="stealer-logs-by-website",
     ),
     path(
-        "stealer-logs-domain/",
+        "stealer-logs-domain",
         StealerLogsByEmailDomainProxyView.as_view(),
         name="stealer-logs-by-email-domain",
     ),
-    path("breaches/", AllBreachesProxyView.as_view(), name="breaches"),
-    path("breach/<str:name>/", SingleBreachProxyView.as_view(), name="single-breach"),
-    path("latestbreach/", LatestBreachProxyView.as_view(), name="latest-breach"),
-    path("dataclasses/", DataClassesProxyView.as_view(), name="data-classes"),
+    path("breaches", AllBreachesProxyView.as_view(), name="breaches"),
+    path("breach/<str:name>", SingleBreachProxyView.as_view(), name="single-breach"),
+    path("latestbreach", LatestBreachProxyView.as_view(), name="latest-breach"),
+    path("dataclasses", DataClassesProxyView.as_view(), name="data-classes"),
     path(
-        "subscription/status/",
+        "subscription/status",
         SubscriptionStatusProxyView.as_view(),
         name="subscription-status",
     ),
