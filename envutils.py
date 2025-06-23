@@ -21,6 +21,7 @@ def ensure_env(base_dir: Path) -> None:
         'DJANGO_SECRET_KEY': secrets.token_urlsafe(50),
         'DJANGO_SUPERUSER_USERNAME': f"admin_{secrets.token_hex(4)}",
         'DJANGO_SUPERUSER_PASSWORD': secrets.token_urlsafe(16),
+        'DJANGO_DEBUG': 'false',
     }
 
     with open(env_path, 'w') as fh:
