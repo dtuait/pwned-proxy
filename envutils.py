@@ -28,7 +28,9 @@ def ensure_env(base_dir: Path) -> None:
             fh.write(f"{key}={value}\n")
             os.environ.setdefault(key, value)
 
-    print(f"Generated {env_path} with secure defaults")
+    print(f"Generated {env_path} with secure defaults:")
+    for key, value in defaults.items():
+        print(f"  {key}={value}")
     print("Admin credentials:")
     print(f"  username: {defaults['DJANGO_SUPERUSER_USERNAME']}")
     print(f"  password: {defaults['DJANGO_SUPERUSER_PASSWORD']}")
