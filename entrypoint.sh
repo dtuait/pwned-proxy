@@ -17,5 +17,9 @@ sudo install -d -m 0755 "$STATIC_ROOT" && sudo chown appuser:appuser "$STATIC_RO
 # Run one-time setup tasks if HIBP_API_KEY is configured
 /usr/src/venvs/app-main/bin/python manage.py initial_setup || true
 
-exec /usr/src/venvs/app-main/bin/gunicorn pwned_proxy.wsgi:application --bind 0.0.0.0:8000
+exec /usr/src/venvs/app-main/bin/gunicorn \
+    pwned_proxy.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --access-logfile - \
+    --log-level info
 
