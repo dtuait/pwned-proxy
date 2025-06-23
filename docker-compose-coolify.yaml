@@ -10,9 +10,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       # Optional HIBP API key used for initial setup
       - HIBP_API_KEY=${HIBP_API_KEY:-}
-    ports:
-      - "80:8000"
-      - "443:8000"
     depends_on:
       db:
         condition: service_healthy
