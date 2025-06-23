@@ -55,11 +55,11 @@ def make_response(resp: requests.Response) -> Response:
 
 class BreachedDomainProxyView(APIView):
     """
-    GET /api/breached-domain/<domain>/
+    GET /api/v3/breacheddomain/{domain}
     """
 
     @swagger_auto_schema(
-        operation_description="Proxy to /breacheddomain/<domain> on HIBP.",
+        operation_description="Proxy to /breacheddomain/{domain} on HIBP.",
         manual_parameters=[
             openapi.Parameter(
                 name="domain",
@@ -69,7 +69,7 @@ class BreachedDomainProxyView(APIView):
                 description="Domain to query (e.g. dtu.dk).",
             ),
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=False,
@@ -90,24 +90,24 @@ class BreachedDomainProxyView(APIView):
 
 class BreachedAccountProxyView(APIView):
     """
-    GET /api/breached-account/<email>/
+    GET /api/v3/breachedaccount/{account}
     """
 
     @swagger_auto_schema(
         operation_description=(
-            "Proxy to /breachedaccount/<email> on HIBP. "
+            "Proxy to /breachedaccount/{account} on HIBP. "
             "Email domain must be authorised."
         ),
         manual_parameters=[
             openapi.Parameter(
-                name="email",
+                name="account",
                 in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
                 description="Email address, e.g. user@dtu.dk",
             ),
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=False,
@@ -115,15 +115,15 @@ class BreachedAccountProxyView(APIView):
         ],
         responses={200: "Success", 404: "No record"},
     )
-    def get(self, request, email: str = None):
+    def get(self, request, account: str = None):
         if not isinstance(request.auth, APIKey):
             return Response({"detail": "No valid API key provided."}, status=401)
 
-        if not email:
+        if not account:
             return Response({"detail": "No email specified."}, status=400)
 
         try:
-            local, email_domain = email.rsplit("@", 1)
+            local, email_domain = account.rsplit("@", 1)
         except ValueError:
             return Response({"detail": "Invalid email format."}, status=400)
 
@@ -133,7 +133,7 @@ class BreachedAccountProxyView(APIView):
                 f"API key not authorised for domain '{email_domain}'"
             )
 
-        resp = hibp_get(f"breachedaccount/{requests.utils.requote_uri(email)}")
+        resp = hibp_get(f"breachedaccount/{requests.utils.requote_uri(account)}")
         return make_response(resp)
 
 
@@ -143,7 +143,7 @@ class BreachedAccountProxyView(APIView):
 
 
 class PasteAccountProxyView(APIView):
-    """GET /api/pasteaccount/<email>/"""
+    """GET /api/v3/pasteaccount/{account}"""
 
     @swagger_auto_schema(
         operation_description=(
@@ -152,43 +152,43 @@ class PasteAccountProxyView(APIView):
         ),
         manual_parameters=[
             openapi.Parameter(
-                name="email",
+                name="account",
                 in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
                 description="Email to search in pastes.",
             ),
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
             ),
         ],
     )
-    def get(self, request, email: str = None):
+    def get(self, request, account: str = None):
         api_key_obj = request.auth
         if not api_key_obj:
             return Response({"detail": "No valid API key."}, status=401)
 
-        if not email:
+        if not account:
             return Response({"detail": "Missing 'email' parameter."}, status=400)
 
         try:
-            local, email_domain = email.rsplit("@", 1)
+            local, email_domain = account.rsplit("@", 1)
         except ValueError:
             return Response({"detail": "Invalid email format."}, status=400)
 
         if not api_key_obj.domains.filter(name=email_domain).exists():
             raise PermissionDenied(f"API key not authorised for '{email_domain}'")
 
-        resp = hibp_get(f"pasteaccount/{requests.utils.requote_uri(email)}")
+        resp = hibp_get(f"pasteaccount/{requests.utils.requote_uri(account)}")
         return make_response(resp)
 
 
 class SubscribedDomainsProxyView(APIView):
     """
-    GET /api/subscribed-domains/
+    GET /api/v3/subscribeddomains
     """
 
     @swagger_auto_schema(
@@ -198,7 +198,7 @@ class SubscribedDomainsProxyView(APIView):
         ),
         manual_parameters=[
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
@@ -227,7 +227,7 @@ class SubscribedDomainsProxyView(APIView):
 
 class StealerLogsByEmailProxyView(APIView):
     """
-    GET /api/stealer-logs-email/?email=<user@domain.com>
+    GET /api/v3/stealer-logs-email?email=<user@domain.com>
     """
 
     @swagger_auto_schema(
@@ -240,7 +240,7 @@ class StealerLogsByEmailProxyView(APIView):
                 required=True,
             ),
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
@@ -270,7 +270,7 @@ class StealerLogsByEmailProxyView(APIView):
 
 class StealerLogsByWebsiteDomainProxyView(APIView):
     """
-    GET /api/stealer-logs-website/?domain=<mydomain.com>
+    GET /api/v3/stealer-logs-website?domain=<mydomain.com>
     """
 
     @swagger_auto_schema(
@@ -283,7 +283,7 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
                 required=True,
             ),
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
@@ -310,7 +310,7 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
 
 class StealerLogsByEmailDomainProxyView(APIView):
     """
-    GET /api/stealer-logs-domain/
+    GET /api/v3/stealer-logs-domain
     (uses the first domain linked to the caller's API key)
     """
 
@@ -318,7 +318,7 @@ class StealerLogsByEmailDomainProxyView(APIView):
         operation_description="Proxy to /stealerlogsbyemaildomain/{domain} on HIBP.",
         manual_parameters=[
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
@@ -339,7 +339,7 @@ class StealerLogsByEmailDomainProxyView(APIView):
 
 
 class AllBreachesProxyView(APIView):
-    """GET /api/breaches/"""
+    """GET /api/v3/breaches"""
 
     @swagger_auto_schema(
         operation_description=(
@@ -375,7 +375,7 @@ class AllBreachesProxyView(APIView):
 
 
 class SingleBreachProxyView(APIView):
-    """GET /api/breach/<name>/"""
+    """GET /api/v3/breach/{name}"""
 
     @swagger_auto_schema(
         operation_description="Proxy to /breach/{name} on HIBP.",
@@ -395,7 +395,7 @@ class SingleBreachProxyView(APIView):
 
 
 class LatestBreachProxyView(APIView):
-    """GET /api/latest-breach/"""
+    """GET /api/v3/latestbreach"""
 
     @swagger_auto_schema(operation_description="Proxy to /latestbreach on HIBP.")
     def get(self, request):
@@ -404,7 +404,7 @@ class LatestBreachProxyView(APIView):
 
 
 class DataClassesProxyView(APIView):
-    """GET /api/data-classes/"""
+    """GET /api/v3/dataclasses"""
 
     @swagger_auto_schema(operation_description="Proxy to /dataclasses on HIBP.")
     def get(self, request):
@@ -413,13 +413,13 @@ class DataClassesProxyView(APIView):
 
 
 class SubscriptionStatusProxyView(APIView):
-    """GET /api/subscription-status/"""
+    """GET /api/v3/subscription/status"""
 
     @swagger_auto_schema(
         operation_description="Proxy to /subscription/status on HIBP.",
         manual_parameters=[
             openapi.Parameter(
-                name="X-API-Key",
+                name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
                 required=True,
