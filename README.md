@@ -33,8 +33,9 @@ docker compose up --build
 ```
 
 The Django application will be available on port **8000**. It accepts
-requests for both `localhost` and `api.dtuaitsoc.ngrok.dev` thanks to the
-`ALLOWED_HOSTS` configuration. On first start, migrations are applied and a
+requests for `localhost`, `api.dtuaitsoc.ngrok.dev` and
+`api.haveibeenpwned.security.ait.dtu.dk` thanks to the `ALLOWED_HOSTS`
+configuration. On first start, migrations are applied and a
 superuser is created automatically. If the `.env` file was generated, all
 generated values including the admin credentials are printed and stored in that
 file so you can reuse them across restarts.

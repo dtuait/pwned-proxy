@@ -46,6 +46,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "dtuaitsoc.ngrok.dev",
     "api.dtuaitsoc.ngrok.dev",
+    "api.haveibeenpwned.security.ait.dtu.dk",
 ]
 
 # Allow additional hosts to be configured via environment variables.
@@ -190,6 +191,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     # add other domains if necessary
+    "https://api.haveibeenpwned.security.ait.dtu.dk",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
