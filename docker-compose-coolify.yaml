@@ -8,6 +8,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-db}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      # Optional HIBP API key used for initial setup
+      - HIBP_API_KEY=${HIBP_API_KEY:-}
     expose:
       - "8000"
     depends_on:
