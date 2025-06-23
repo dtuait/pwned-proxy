@@ -12,7 +12,7 @@ services:
       POSTGRES_DB:       ${POSTGRES_DB:-db}
       POSTGRES_USER:     ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-2YyAbJsncVLgc4cSn6HV6r9PdtwhG5wT}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-this-to-a-random-secret-key}
       HIBP_API_KEY:      ${HIBP_API_KEY:-}
       DJANGO_DEBUG:      ${DJANGO_DEBUG:-false}
 
