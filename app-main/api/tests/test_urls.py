@@ -8,7 +8,7 @@ class URLPatternsTest(SimpleTestCase):
         tests = [
             ("breached-domain", {"domain": "dtu.dk"}, views.BreachedDomainProxyView),
             ("breached-account", {"email": "user@dtu.dk"}, views.BreachedAccountProxyView),
-            ("paste-account", {}, views.PasteAccountProxyView),
+            ("paste-account", {"email": "user@dtu.dk"}, views.PasteAccountProxyView),
             ("subscribed-domains", {}, views.SubscribedDomainsProxyView),
             ("stealer-logs-by-email", {}, views.StealerLogsByEmailProxyView),
             ("stealer-logs-by-website", {}, views.StealerLogsByWebsiteDomainProxyView),
