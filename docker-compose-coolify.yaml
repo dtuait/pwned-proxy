@@ -2,17 +2,15 @@ version: "3.9"
 
 services:
   app:
+    # ─── build the Django image ───────────────────────────────────────────
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile.prod
 
-    # Make port 8000 visible to Traefik (but **not** published on the host)
-    expose:
-      - "8000"
-
+    # ─── runtime configuration ────────────────────────────────────────────
     environment:
-      # Coolify injects SERVICE_FQDN_APP with the domain at deploy time
-      SERVICE_FQDN_APP: ${SERVICE_FQDN_APP:-}
+      # will be injected by Coolify; useful for Django ALLOWED_HOSTS logic
+      SERVICE_FQDN_APP: ${SERVICE_FQDN_APP}
       POSTGRES_DB:       ${POSTGRES_DB:-db}
       POSTGRES_USER:     ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -22,27 +20,16 @@ services:
       db:
         condition: service_healthy
 
-    # Attach to the same user-defined network that Coolify’s proxy stack uses
-    networks:
-      - coolify         # external network created by Coolify
-      - default         # your project network (for DB access)
+    # tell Traefik which internal port to forward to
+    expose:
+      - "8000"
 
     labels:
-      # activate Traefik integration
       - "traefik.enable=true"
-
-      # ---------------- secure router ----------------
-      - "traefik.http.routers.pwnedproxy.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)"
-      - "traefik.http.routers.pwnedproxy.entryPoints=https"
-      - "traefik.http.routers.pwnedproxy.tls=true"
-      - "traefik.http.routers.pwnedproxy.tls.certresolver=letsencrypt"
+      # make the service discoverable on the port we just exposed
       - "traefik.http.services.pwnedproxy.loadbalancer.server.port=8000"
-
-      # ---------------- http → https redirect --------
-      - "traefik.http.routers.pwnedproxy-http.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)"
-      - "traefik.http.routers.pwnedproxy-http.entryPoints=http"
-      - "traefik.http.routers.pwnedproxy-http.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # Coolify **automatically** creates the router & TLS certificate that
+      # matches the domain you set in the UI, so no extra router label needed
 
   db:
     image: postgres:14-alpine
@@ -60,8 +47,3 @@ services:
 
 volumes:
   postgres_data:
-
-networks:
-  # Re-use Coolify’s proxy network so Traefik can reach the container directly
-  coolify:
-    external: true
