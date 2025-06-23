@@ -48,6 +48,18 @@ ALLOWED_HOSTS = [
     "api.dtuaitsoc.ngrok.dev",
 ]
 
+# Allow additional hosts to be configured via environment variables.
+# This supports deployments on services like Coolify that provide the
+# domain through SERVICE_FQDN_APP_8000 or a custom DJANGO_ALLOWED_HOSTS
+# variable.
+extra_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS")
+if extra_hosts:
+    ALLOWED_HOSTS += [h.strip() for h in extra_hosts.split(",") if h.strip()]
+
+service_fqdn = os.environ.get("SERVICE_FQDN_APP_8000")
+if service_fqdn:
+    ALLOWED_HOSTS.append(service_fqdn)
+
 
 # Application definition
 
