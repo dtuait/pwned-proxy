@@ -206,3 +206,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 # forwarded header so HTTPS links are generated correctly.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+
+# Allow this application to be embedded in an iframe. By default Django
+# sets the X-Frame-Options header to 'DENY' which prevents embedding. Setting
+# it to 'ALLOWALL' removes the header so the site can be framed by any origin.
+X_FRAME_OPTIONS = 'ALLOWALL'
