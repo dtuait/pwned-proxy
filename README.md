@@ -12,8 +12,8 @@ immediately.
 
 On first start the application will create a `.env` file with random values
 for the required secrets if none exists.  You can customise these settings by
-creating your own `.env` based on `./env.dev.example` or
-`./env.prod.example`.  A helper script is provided to generate the necessary
+creating your own `.env` based on `./env.example`.  A helper script is provided
+to generate the necessary
 files automatically:
 
 ```bash
@@ -35,9 +35,9 @@ docker compose up --build
 The Django application will be available on port **8000**. It accepts
 requests for both `localhost` and `api.dtuaitsoc.ngrok.dev` thanks to the
 `ALLOWED_HOSTS` configuration. On first start, migrations are applied and a
-superuser is created automatically. If the `.env` file was generated, the
-admin username and password are printed and stored in that file so you can
-reuse them across restarts.
+superuser is created automatically. If the `.env` file was generated, all
+generated values including the admin credentials are printed and stored in that
+file so you can reuse them across restarts.
 
 You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the
