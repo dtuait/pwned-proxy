@@ -12,9 +12,9 @@ import sys
 from pathlib import Path
 
 # When executed inside Docker the working directory is ``app-main``.
-# Include the parent directory on ``sys.path`` so that ``envutils`` can be
+# Include the repository root on ``sys.path`` so that ``envutils`` can be
 # imported by ``pwned_proxy.settings``.
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from django.core.wsgi import get_wsgi_application
 
