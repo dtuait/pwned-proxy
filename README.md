@@ -39,6 +39,14 @@ superuser is created automatically. If the `.env` file was generated, all
 generated values including the admin credentials are printed and stored in that
 file so you can reuse them across restarts.
 
+### Using a custom domain
+
+When deploying on platforms like Coolify you may receive a unique domain via
+the `SERVICE_FQDN_APP_8000` environment variable. You can also supply additional
+hosts through `DJANGO_ALLOWED_HOSTS`. These values are automatically appended to
+the Django `ALLOWED_HOSTS` list so the application will accept requests for your
+custom domain.
+
 You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the
 superuser credentials you provided.
