@@ -16,11 +16,12 @@ User = get_user_model()
 
 class APIKeyAuthentication(BaseAuthentication):
     """
-    Looks for 'X-API-Key' in headers, compares hashed value to stored APIKeys.
+    Looks for 'X-API-Key' or 'hibp-api-key' in headers,
+    compares hashed value to stored APIKeys.
     """
 
     def authenticate(self, request):
-        raw_key = request.headers.get('X-API-Key')
+        raw_key = request.headers.get('X-API-Key') or request.headers.get('hibp-api-key')
         if not raw_key:
             return None  # No API key => DRF tries next auth class
 

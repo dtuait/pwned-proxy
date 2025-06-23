@@ -35,6 +35,19 @@ def hibp_get(path: str):
     return requests.get(url, headers=headers)
 
 
+def make_response(resp: requests.Response) -> Response:
+    """Create a DRF Response from a requests.Response, forwarding JSON/text and
+    select headers."""
+    try:
+        data = resp.json()
+    except ValueError:
+        data = resp.text
+    headers = {}
+    if "Retry-After" in resp.headers:
+        headers["Retry-After"] = resp.headers["Retry-After"]
+    return Response(data, status=resp.status_code, headers=headers)
+
+
 # ---------------------------------------------------------------------
 # Proxy endpoints
 # ---------------------------------------------------------------------
@@ -72,11 +85,7 @@ class BreachedDomainProxyView(APIView):
             raise PermissionDenied(f"API key not authorized for domain '{domain}'")
 
         resp = hibp_get(f"breacheddomain/{domain}")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            # Non-JSON error from HIBP
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class BreachedAccountProxyView(APIView):
@@ -125,12 +134,7 @@ class BreachedAccountProxyView(APIView):
             )
 
         resp = hibp_get(f"breachedaccount/{requests.utils.requote_uri(email)}")
-        if resp.status_code == 404:
-            return Response([], status=200)
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 # ---------------------------------------------------------------------
@@ -139,9 +143,7 @@ class BreachedAccountProxyView(APIView):
 
 
 class PasteAccountProxyView(APIView):
-    """
-    GET /api/paste-account/?email=<user@domain.com>
-    """
+    """GET /api/pasteaccount/<email>/"""
 
     @swagger_auto_schema(
         operation_description=(
@@ -151,7 +153,7 @@ class PasteAccountProxyView(APIView):
         manual_parameters=[
             openapi.Parameter(
                 name="email",
-                in_=openapi.IN_QUERY,
+                in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
                 description="Email to search in pastes.",
@@ -164,12 +166,11 @@ class PasteAccountProxyView(APIView):
             ),
         ],
     )
-    def get(self, request):
+    def get(self, request, email: str = None):
         api_key_obj = request.auth
         if not api_key_obj:
             return Response({"detail": "No valid API key."}, status=401)
 
-        email = request.query_params.get("email")
         if not email:
             return Response({"detail": "Missing 'email' parameter."}, status=400)
 
@@ -182,10 +183,7 @@ class PasteAccountProxyView(APIView):
             raise PermissionDenied(f"API key not authorised for '{email_domain}'")
 
         resp = hibp_get(f"pasteaccount/{requests.utils.requote_uri(email)}")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class SubscribedDomainsProxyView(APIView):
@@ -218,7 +216,7 @@ class SubscribedDomainsProxyView(APIView):
 
         resp = hibp_get("subscribeddomains")
         if resp.status_code != 200:
-            return Response(resp.json(), status=resp.status_code)
+            return make_response(resp)
 
         data = resp.json()
         filtered = [
@@ -267,10 +265,7 @@ class StealerLogsByEmailProxyView(APIView):
             raise PermissionDenied(f"API key not authorised for '{email_domain}'")
 
         resp = hibp_get(f"stealerlogsbyemail/{requests.utils.requote_uri(email)}")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class StealerLogsByWebsiteDomainProxyView(APIView):
@@ -310,10 +305,7 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
         resp = hibp_get(
             f"stealerlogsbywebsitedomain/{requests.utils.requote_uri(domain)}"
         )
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class StealerLogsByEmailDomainProxyView(APIView):
@@ -343,10 +335,7 @@ class StealerLogsByEmailDomainProxyView(APIView):
             raise PermissionDenied("API key has no associated domains.")
 
         resp = hibp_get(f"stealerlogsbyemaildomain/{domain_obj.name}")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class AllBreachesProxyView(APIView):
@@ -382,10 +371,7 @@ class AllBreachesProxyView(APIView):
         if query:
             path += f"?{urlencode(query)}"
         resp = hibp_get(path)
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class SingleBreachProxyView(APIView):
@@ -405,10 +391,7 @@ class SingleBreachProxyView(APIView):
     )
     def get(self, request, name: str = None):
         resp = hibp_get(f"breach/{requests.utils.requote_uri(name)}")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class LatestBreachProxyView(APIView):
@@ -417,10 +400,7 @@ class LatestBreachProxyView(APIView):
     @swagger_auto_schema(operation_description="Proxy to /latestbreach on HIBP.")
     def get(self, request):
         resp = hibp_get("latestbreach")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class DataClassesProxyView(APIView):
@@ -429,10 +409,7 @@ class DataClassesProxyView(APIView):
     @swagger_auto_schema(operation_description="Proxy to /dataclasses on HIBP.")
     def get(self, request):
         resp = hibp_get("dataclasses")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
 
 
 class SubscriptionStatusProxyView(APIView):
@@ -453,7 +430,4 @@ class SubscriptionStatusProxyView(APIView):
         if not request.auth:
             return Response({"detail": "No valid API key."}, status=401)
         resp = hibp_get("subscription/status")
-        try:
-            return Response(resp.json(), status=resp.status_code)
-        except ValueError:
-            return Response(resp.text, status=resp.status_code)
+        return make_response(resp)
