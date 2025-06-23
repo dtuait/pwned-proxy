@@ -1,4 +1,5 @@
-from django.core.management.base import BaseCommand, call_command
+from django.core.management.base import BaseCommand
+from django.core.management import call_command
 from django.contrib.auth.models import Group
 from api.models import HIBPKey, APIKey, Domain
 from api.admin import SEED_DATA
