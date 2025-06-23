@@ -4,15 +4,17 @@ services:
       context: .
       dockerfile: .devcontainer/Dockerfile.prod
     environment:
-      - SERVICE_FQDN_APP
+      - SERVICE_FQDN_APP_8000  # Correct pattern, Coolify will inject SERVICE_FQDN_APP with the domain
       - POSTGRES_DB=${POSTGRES_DB:-db}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      # Optional HIBP API key used for initial setup
       - HIBP_API_KEY=${HIBP_API_KEY:-}
+    ports:
+      - "8000:8000"  # Optional in Coolify, but fine to keep if you want to test locally
     depends_on:
       db:
         condition: service_healthy
+
   db:
     image: postgres:14-alpine
     environment:
@@ -22,9 +24,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
 volumes:
   postgres_data:
