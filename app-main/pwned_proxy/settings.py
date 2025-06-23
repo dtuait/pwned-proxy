@@ -39,7 +39,9 @@ AZURE_AD_GRANT_TYPE = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# Parse DJANGO_DEBUG from environment variables. Defaults to False
+_debug_env = os.environ.get("DJANGO_DEBUG", "false").lower()
+DEBUG = _debug_env in {"1", "true", "yes"}
 
 ALLOWED_HOSTS = [
     "localhost",

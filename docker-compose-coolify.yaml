@@ -13,6 +13,7 @@ services:
       POSTGRES_USER:     ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       HIBP_API_KEY:      ${HIBP_API_KEY:-}
+      DJANGO_DEBUG:      ${DJANGO_DEBUG:-false}
 
     depends_on:
       db:
