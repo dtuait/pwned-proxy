@@ -197,3 +197,12 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# When running behind a reverse proxy like Traefik the original protocol is
+# communicated via the `X-Forwarded-Proto` header. Without telling Django to
+# trust this header it will assume all requests are HTTP, causing tools like
+# drf-yasg to generate Swagger/OpenAPI URLs with the wrong scheme. Browsers then
+# block these "mixed content" requests. Configure Django to respect the
+# forwarded header so HTTPS links are generated correctly.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
