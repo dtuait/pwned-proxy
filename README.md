@@ -44,6 +44,11 @@ When deploying with `docker-compose-coolify.yaml`, ports `80` and `443` are
 mapped to the internal port `8000` so the application is reachable at the
 provided domain without specifying a port.
 
+If you need to temporarily enable Django's debug mode on Coolify, use
+`docker-compose-coolify-debug-enabled.yaml`. This override file sets
+`DJANGO_SETTINGS_MODULE` to a debug configuration so the underlying error is
+displayed instead of a generic 500 page.
+
 ### Using a custom domain
 
 When deploying on platforms like Coolify you may receive a unique domain via
