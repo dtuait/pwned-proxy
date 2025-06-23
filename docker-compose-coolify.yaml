@@ -1,24 +1,55 @@
+version: "3.9"
+
 services:
   app:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile.prod
+
+    # Make port 8000 visible to Traefik (but **not** published on the host)
+    expose:
+      - "8000"
+
     environment:
-      - SERVICE_FQDN_APP_8000  # Correct pattern, Coolify will inject SERVICE_FQDN_APP with the domain
-      - POSTGRES_DB=${POSTGRES_DB:-db}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - HIBP_API_KEY=${HIBP_API_KEY:-}
+      # Coolify injects SERVICE_FQDN_APP with the domain at deploy time
+      SERVICE_FQDN_APP: ${SERVICE_FQDN_APP:-}
+      POSTGRES_DB:       ${POSTGRES_DB:-db}
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      HIBP_API_KEY:      ${HIBP_API_KEY:-}
+
     depends_on:
       db:
         condition: service_healthy
 
+    # Attach to the same user-defined network that Coolify’s proxy stack uses
+    networks:
+      - coolify         # external network created by Coolify
+      - default         # your project network (for DB access)
+
+    labels:
+      # activate Traefik integration
+      - "traefik.enable=true"
+
+      # ---------------- secure router ----------------
+      - "traefik.http.routers.pwnedproxy.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)"
+      - "traefik.http.routers.pwnedproxy.entryPoints=https"
+      - "traefik.http.routers.pwnedproxy.tls=true"
+      - "traefik.http.routers.pwnedproxy.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pwnedproxy.loadbalancer.server.port=8000"
+
+      # ---------------- http → https redirect --------
+      - "traefik.http.routers.pwnedproxy-http.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)"
+      - "traefik.http.routers.pwnedproxy-http.entryPoints=http"
+      - "traefik.http.routers.pwnedproxy-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
   db:
     image: postgres:14-alpine
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-db}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB:       ${POSTGRES_DB:-db}
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -29,3 +60,8 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  # Re-use Coolify’s proxy network so Traefik can reach the container directly
+  coolify:
+    external: true
