@@ -38,17 +38,17 @@ urlpatterns = [
         name="subscribed-domains",
     ),
     path(
-        "stealer-logs-email",
+        "stealerlogsbyemail/<path:email>",
         StealerLogsByEmailProxyView.as_view(),
         name="stealer-logs-by-email",
     ),
     path(
-        "stealer-logs-website",
+        "stealerlogsbywebsitedomain/<str:domain>",
         StealerLogsByWebsiteDomainProxyView.as_view(),
         name="stealer-logs-by-website",
     ),
     path(
-        "stealer-logs-domain",
+        "stealerlogsbyemaildomain/<str:domain>",
         StealerLogsByEmailDomainProxyView.as_view(),
         name="stealer-logs-by-email-domain",
     ),

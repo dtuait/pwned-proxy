@@ -198,6 +198,12 @@ class SubscribedDomainsProxyView(APIView):
         ),
         manual_parameters=[
             openapi.Parameter(
+                name="domain",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
                 name="hibp-api-key",
                 in_=openapi.IN_HEADER,
                 type=openapi.TYPE_STRING,
@@ -227,7 +233,7 @@ class SubscribedDomainsProxyView(APIView):
 
 class StealerLogsByEmailProxyView(APIView):
     """
-    GET /api/v3/stealer-logs-email?email=<user@domain.com>
+    GET /api/v3/stealerlogsbyemail/{email}
     """
 
     @swagger_auto_schema(
@@ -235,7 +241,7 @@ class StealerLogsByEmailProxyView(APIView):
         manual_parameters=[
             openapi.Parameter(
                 name="email",
-                in_=openapi.IN_QUERY,
+                in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
             ),
@@ -247,12 +253,11 @@ class StealerLogsByEmailProxyView(APIView):
             ),
         ],
     )
-    def get(self, request):
+    def get(self, request, email: str = None):
         api_key_obj = request.auth
         if not api_key_obj:
             return Response({"detail": "No valid API key."}, status=401)
 
-        email = request.query_params.get("email")
         if not email:
             return Response({"detail": "Missing 'email' parameter."}, status=400)
 
@@ -270,7 +275,7 @@ class StealerLogsByEmailProxyView(APIView):
 
 class StealerLogsByWebsiteDomainProxyView(APIView):
     """
-    GET /api/v3/stealer-logs-website?domain=<mydomain.com>
+    GET /api/v3/stealerlogsbywebsitedomain/{domain}
     """
 
     @swagger_auto_schema(
@@ -278,7 +283,7 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
         manual_parameters=[
             openapi.Parameter(
                 name="domain",
-                in_=openapi.IN_QUERY,
+                in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
                 required=True,
             ),
@@ -290,12 +295,11 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
             ),
         ],
     )
-    def get(self, request):
+    def get(self, request, domain: str = None):
         api_key_obj = request.auth
         if not api_key_obj:
             return Response({"detail": "No valid API key."}, status=401)
 
-        domain = request.query_params.get("domain")
         if not domain:
             return Response({"detail": "Missing 'domain' parameter."}, status=400)
 
@@ -310,13 +314,18 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
 
 class StealerLogsByEmailDomainProxyView(APIView):
     """
-    GET /api/v3/stealer-logs-domain
-    (uses the first domain linked to the caller's API key)
+    GET /api/v3/stealerlogsbyemaildomain/{domain}
     """
 
     @swagger_auto_schema(
         operation_description="Proxy to /stealerlogsbyemaildomain/{domain} on HIBP.",
         manual_parameters=[
+            openapi.Parameter(
+                name="domain",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
             openapi.Parameter(
                 name="hibp-api-key",
                 in_=openapi.IN_HEADER,
@@ -325,16 +334,18 @@ class StealerLogsByEmailDomainProxyView(APIView):
             ),
         ],
     )
-    def get(self, request):
+    def get(self, request, domain: str = None):
         api_key_obj = request.auth
         if not api_key_obj:
             return Response({"detail": "No valid API key."}, status=401)
 
-        domain_obj = api_key_obj.domains.first()
-        if not domain_obj:
-            raise PermissionDenied("API key has no associated domains.")
+        if not domain:
+            return Response({"detail": "Missing 'domain' parameter."}, status=400)
 
-        resp = hibp_get(f"stealerlogsbyemaildomain/{domain_obj.name}")
+        if not api_key_obj.domains.filter(name=domain).exists():
+            raise PermissionDenied(f"API key not authorised for '{domain}'")
+
+        resp = hibp_get(f"stealerlogsbyemaildomain/{domain}")
         return make_response(resp)
 
 
