@@ -7,12 +7,12 @@ class URLPatternsTest(SimpleTestCase):
     def test_all_endpoints_resolve(self):
         tests = [
             ("breached-domain", {"domain": "dtu.dk"}, views.BreachedDomainProxyView),
-            ("breached-account", {"email": "user@dtu.dk"}, views.BreachedAccountProxyView),
-            ("paste-account", {"email": "user@dtu.dk"}, views.PasteAccountProxyView),
+            ("breached-account", {"account": "user@dtu.dk"}, views.BreachedAccountProxyView),
+            ("paste-account", {"account": "user@dtu.dk"}, views.PasteAccountProxyView),
             ("subscribed-domains", {}, views.SubscribedDomainsProxyView),
-            ("stealer-logs-by-email", {}, views.StealerLogsByEmailProxyView),
-            ("stealer-logs-by-website", {}, views.StealerLogsByWebsiteDomainProxyView),
-            ("stealer-logs-by-email-domain", {}, views.StealerLogsByEmailDomainProxyView),
+            ("stealer-logs-by-email", {"email": "user@dtu.dk"}, views.StealerLogsByEmailProxyView),
+            ("stealer-logs-by-website", {"domain": "dtu.dk"}, views.StealerLogsByWebsiteDomainProxyView),
+            ("stealer-logs-by-email-domain", {"domain": "dtu.dk"}, views.StealerLogsByEmailDomainProxyView),
             ("breaches", {}, views.AllBreachesProxyView),
             ("single-breach", {"name": "Example"}, views.SingleBreachProxyView),
             ("latest-breach", {}, views.LatestBreachProxyView),
