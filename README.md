@@ -23,6 +23,8 @@ files automatically:
 This populates `.env` and `.devcontainer/.env` using the example templates and
 should be run before starting Docker or the Dev Container.
 
+Set `DJANGO_DEBUG=true` in your `.env` to enable Django's debug mode.
+
 
 ## Running the stack
 
