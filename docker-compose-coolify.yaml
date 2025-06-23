@@ -9,8 +9,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - HIBP_API_KEY=${HIBP_API_KEY:-}
-    ports:
-      - "8000:8000"  # Optional in Coolify, but fine to keep if you want to test locally
     depends_on:
       db:
         condition: service_healthy
