@@ -119,7 +119,7 @@ class APIKey(models.Model):
 
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.core.cache import cache
 
 class HIBPKey(models.Model):
     """
@@ -153,3 +153,8 @@ class HIBPKey(models.Model):
         """
         self.clean()
         super().save(*args, **kwargs)
+        cache.delete("hibp_api_key")
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cache.delete("hibp_api_key")
