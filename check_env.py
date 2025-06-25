@@ -34,14 +34,21 @@ def main() -> None:
     compose_vars = parse_compose(COMPOSE)
     example_envs = parse_env_example(EXAMPLE)
 
-    missing = compose_vars - example_envs.keys()
-    extra = example_envs.keys() - compose_vars
-    if missing or extra:
-        print('Environment variable mismatch between docker-compose-coolify.yaml and .env.example', file=sys.stderr)
-        if missing:
-            print('Missing in .env.example:', ', '.join(sorted(missing)), file=sys.stderr)
-        if extra:
-            print('Extra in .env.example:', ', '.join(sorted(extra)), file=sys.stderr)
+    # Only enforce that variables defined in the compose file exist in the
+    # example. Coolify injects additional variables prefixed with COOLIFY_ which
+    # should not trigger a failure. Extra variables in the example file are
+    # allowed and ignored.
+    compose_required = {
+        var for var in compose_vars if not var.startswith('COOLIFY_')
+    }
+    missing = compose_required - example_envs.keys()
+    if missing:
+        print(
+            'Environment variable mismatch between docker-compose-coolify.yaml and .env.example',
+            file=sys.stderr,
+        )
+        print('Missing in .env.example:', ', '.join(sorted(missing)), file=sys.stderr)
+
         sys.exit(1)
 
     placeholders = {
