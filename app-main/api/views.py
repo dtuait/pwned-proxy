@@ -95,8 +95,7 @@ class BreachedAccountProxyView(APIView):
 
     @swagger_auto_schema(
         operation_description=(
-            "Proxy to /breachedaccount/{account} on HIBP. "
-            "Email domain must be authorised."
+            "Proxy to /breachedaccount/{account} on HIBP."
         ),
         manual_parameters=[
             openapi.Parameter(
@@ -116,22 +115,13 @@ class BreachedAccountProxyView(APIView):
         responses={200: "Success", 404: "No record"},
     )
     def get(self, request, account: str = None):
-        if not isinstance(request.auth, APIKey):
-            return Response({"detail": "No valid API key provided."}, status=401)
-
         if not account:
             return Response({"detail": "No email specified."}, status=400)
 
         try:
-            local, email_domain = account.rsplit("@", 1)
-        except ValueError:
+            account.encode("ascii")  # simple validation
+        except UnicodeEncodeError:
             return Response({"detail": "Invalid email format."}, status=400)
-
-        api_key_obj = request.auth
-        if not api_key_obj.domains.filter(name=email_domain).exists():
-            raise PermissionDenied(
-                f"API key not authorised for domain '{email_domain}'"
-            )
 
         resp = hibp_get(f"breachedaccount/{requests.utils.requote_uri(account)}")
         return make_response(resp)
