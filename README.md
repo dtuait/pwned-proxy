@@ -10,18 +10,19 @@ immediately.
 - [Docker](https://www.docker.com/) and Docker Compose installed
 
 
-On first start the application will create a `.env` file with random values
-for the required secrets if none exists.  You can customise these settings by
-creating your own `.env` based on `./env.example`.  A helper script is provided
-to generate the necessary
-files automatically:
+Before starting the stack you must create a `.env` file. Copy `.env.example`
+and replace the placeholder values. At minimum `DJANGO_SECRET_KEY` and
+`POSTGRES_PASSWORD` need strong values which you can generate at
+<https://www.random.org/passwords/?num=5&len=32&format=html&rnd=new>.
+The `generate_env.sh` helper can create the template files:
 
 ```bash
 ./generate_env.sh
 ```
 
 This populates `.env` and `.devcontainer/.env` using the example templates and
-should be run before starting Docker or the Dev Container.
+should be run before starting Docker or the Dev Container. Edit the created
+files and replace any placeholders.
 
 Set `DJANGO_DEBUG=true` in your `.env` to enable Django's debug mode.
 
