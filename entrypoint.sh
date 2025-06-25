@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Validate environment before starting
+/usr/src/venvs/app-main/bin/python /usr/src/project/check_env.py
+
 
 # Ensure we can write to the STATIC_ROOT directory even if a
 # stale container image left it owned by root. This mirrors the
