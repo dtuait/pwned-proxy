@@ -48,6 +48,7 @@ def main() -> None:
             file=sys.stderr,
         )
         print('Missing in .env.example:', ', '.join(sorted(missing)), file=sys.stderr)
+
         sys.exit(1)
 
     placeholders = {
