@@ -105,12 +105,6 @@ class BreachedAccountProxyView(APIView):
                 required=True,
                 description="Email address, e.g. user@dtu.dk",
             ),
-            openapi.Parameter(
-                name="hibp-api-key",
-                in_=openapi.IN_HEADER,
-                type=openapi.TYPE_STRING,
-                required=False,
-            ),
         ],
         responses={200: "Success", 404: "No record"},
     )
