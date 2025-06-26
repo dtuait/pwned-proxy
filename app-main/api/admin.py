@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.shortcuts import redirect
 from django.urls import path
 
-from .models import APIKey, Domain, generate_api_key, hash_api_key
+from .models import APIKey, Domain, generate_api_key, hash_api_key, EndpointLog
 
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
@@ -104,6 +104,13 @@ class HIBPKeyAdmin(admin.ModelAdmin):
     search_fields = ('api_key', 'description')
 
 
+@admin.register(EndpointLog)
+class EndpointLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'group', 'endpoint', 'status_code', 'success')
+    list_filter = ('group', 'endpoint', 'success')
+    readonly_fields = ('api_key', 'group', 'endpoint', 'status_code', 'success', 'created_at')
+
+
 
 
 from django.contrib import admin, messages
@@ -115,7 +122,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponse
 import csv
 
-from .models import APIKey, Domain
+from .models import APIKey, Domain, EndpointLog
 
 # 1) Unregister the default Group admin
 admin.site.unregister(Group)
