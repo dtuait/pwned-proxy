@@ -9,7 +9,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from urllib.parse import urlencode
 
-from .models import APIKey, Domain
+from .models import APIKey, Domain, EndpointLog
 from .utils import get_hibp_key
 
 
@@ -48,12 +48,33 @@ def make_response(resp: requests.Response) -> Response:
     return Response(data, status=resp.status_code, headers=headers)
 
 
+class LoggedAPIView(APIView):
+    """API view that records basic analytics for each request."""
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        resp = super().finalize_response(request, response, *args, **kwargs)
+        try:
+            endpoint = request.resolver_match.view_name
+        except AttributeError:  # pragma: no cover - should not happen
+            endpoint = request.path
+        api_key = request.auth if isinstance(request.auth, APIKey) else None
+        group = api_key.group if api_key else None
+        EndpointLog.objects.create(
+            api_key=api_key,
+            group=group,
+            endpoint=endpoint,
+            status_code=resp.status_code,
+            success=200 <= resp.status_code < 400,
+        )
+        return resp
+
+
 # ---------------------------------------------------------------------
 # Proxy endpoints
 # ---------------------------------------------------------------------
 
 
-class BreachedDomainProxyView(APIView):
+class BreachedDomainProxyView(LoggedAPIView):
     """
     GET /api/v3/breacheddomain/{domain}
     """
@@ -88,7 +109,7 @@ class BreachedDomainProxyView(APIView):
         return make_response(resp)
 
 
-class BreachedAccountProxyView(APIView):
+class BreachedAccountProxyView(LoggedAPIView):
     """
     GET /api/v3/breachedaccount/{account}
     """
@@ -126,7 +147,7 @@ class BreachedAccountProxyView(APIView):
 # ---------------------------------------------------------------------
 
 
-class PasteAccountProxyView(APIView):
+class PasteAccountProxyView(LoggedAPIView):
     """GET /api/v3/pasteaccount/{account}"""
 
     @swagger_auto_schema(
@@ -170,7 +191,7 @@ class PasteAccountProxyView(APIView):
         return make_response(resp)
 
 
-class SubscribedDomainsProxyView(APIView):
+class SubscribedDomainsProxyView(LoggedAPIView):
     """
     GET /api/v3/subscribeddomains
     """
@@ -215,7 +236,7 @@ class SubscribedDomainsProxyView(APIView):
         return Response(filtered, status=200)
 
 
-class StealerLogsByEmailProxyView(APIView):
+class StealerLogsByEmailProxyView(LoggedAPIView):
     """
     GET /api/v3/stealerlogsbyemail/{email}
     """
@@ -257,7 +278,7 @@ class StealerLogsByEmailProxyView(APIView):
         return make_response(resp)
 
 
-class StealerLogsByWebsiteDomainProxyView(APIView):
+class StealerLogsByWebsiteDomainProxyView(LoggedAPIView):
     """
     GET /api/v3/stealerlogsbywebsitedomain/{domain}
     """
@@ -296,7 +317,7 @@ class StealerLogsByWebsiteDomainProxyView(APIView):
         return make_response(resp)
 
 
-class StealerLogsByEmailDomainProxyView(APIView):
+class StealerLogsByEmailDomainProxyView(LoggedAPIView):
     """
     GET /api/v3/stealerlogsbyemaildomain/{domain}
     """
@@ -333,7 +354,7 @@ class StealerLogsByEmailDomainProxyView(APIView):
         return make_response(resp)
 
 
-class AllBreachesProxyView(APIView):
+class AllBreachesProxyView(LoggedAPIView):
     """GET /api/v3/breaches"""
 
     @swagger_auto_schema(
@@ -369,7 +390,7 @@ class AllBreachesProxyView(APIView):
         return make_response(resp)
 
 
-class SingleBreachProxyView(APIView):
+class SingleBreachProxyView(LoggedAPIView):
     """GET /api/v3/breach/{name}"""
 
     @swagger_auto_schema(
@@ -389,7 +410,7 @@ class SingleBreachProxyView(APIView):
         return make_response(resp)
 
 
-class LatestBreachProxyView(APIView):
+class LatestBreachProxyView(LoggedAPIView):
     """GET /api/v3/latestbreach"""
 
     @swagger_auto_schema(operation_description="Proxy to /latestbreach on HIBP.")
@@ -398,7 +419,7 @@ class LatestBreachProxyView(APIView):
         return make_response(resp)
 
 
-class DataClassesProxyView(APIView):
+class DataClassesProxyView(LoggedAPIView):
     """GET /api/v3/dataclasses"""
 
     @swagger_auto_schema(operation_description="Proxy to /dataclasses on HIBP.")
@@ -407,7 +428,7 @@ class DataClassesProxyView(APIView):
         return make_response(resp)
 
 
-class SubscriptionStatusProxyView(APIView):
+class SubscriptionStatusProxyView(LoggedAPIView):
     """GET /api/v3/subscription/status"""
 
     @swagger_auto_schema(

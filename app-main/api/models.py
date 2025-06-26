@@ -158,3 +158,29 @@ class HIBPKey(models.Model):
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
         cache.delete("hibp_api_key")
+
+
+class EndpointLog(models.Model):
+    """Record which API key accessed which endpoint and whether it succeeded."""
+
+    api_key = models.ForeignKey(
+        APIKey,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="endpoint_logs",
+    )
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="endpoint_logs",
+    )
+    endpoint = models.CharField(max_length=255)
+    status_code = models.IntegerField()
+    success = models.BooleanField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.group}: {self.endpoint} -> {self.status_code}"
