@@ -43,12 +43,16 @@ AZURE_AD_GRANT_TYPE = os.environ.get('AZURE_APP_AIT_SOC_GRAPH_VICRE_REGISTRATION
 _debug_env = os.environ.get("DJANGO_DEBUG", "false").lower()
 DEBUG = _debug_env in {"1", "true", "yes"}
 
+PWNED_PROXY_DOMAIN = os.environ.get(
+    "PWNED_PROXY_DOMAIN", "api.haveibeenpwned.security.ait.dtu.dk"
+)
+
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "dtuaitsoc.ngrok.dev",
     "api.dtuaitsoc.ngrok.dev",
-    "api.haveibeenpwned.security.ait.dtu.dk",
+    PWNED_PROXY_DOMAIN,
 ]
 
 # Allow additional hosts to be configured via environment variables.
@@ -193,7 +197,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     # add other domains if necessary
-    "https://api.haveibeenpwned.security.ait.dtu.dk",
+    f"https://{PWNED_PROXY_DOMAIN}",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True

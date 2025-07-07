@@ -26,12 +26,12 @@ services:
 
     labels:
       - traefik.enable=true
-      - traefik.http.routers.pwnedproxy.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)
+      - "traefik.http.routers.pwnedproxy.rule=Host(`$PWNED_PROXY_DOMAIN`)"
       - traefik.http.routers.pwnedproxy.entryPoints=websecure
       - traefik.http.routers.pwnedproxy.tls=true
       - traefik.http.routers.pwnedproxy.tls.certresolver=letsencrypt
       - traefik.http.services.pwnedproxy.loadbalancer.server.port=8000
-      - traefik.http.routers.pwnedproxy-insecure.rule=Host(`api.haveibeenpwned.security.ait.dtu.dk`)
+      - "traefik.http.routers.pwnedproxy-insecure.rule=Host(`$PWNED_PROXY_DOMAIN`)"
       - traefik.http.routers.pwnedproxy-insecure.entryPoints=web
       - traefik.http.routers.pwnedproxy-insecure.middlewares=pwnedproxy-https-redirect
       - traefik.http.middlewares.pwnedproxy-https-redirect.redirectscheme.scheme=https
