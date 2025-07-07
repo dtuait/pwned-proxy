@@ -36,9 +36,9 @@ docker compose up --build
 ```
 
 The Django application will be available on port **8000**. It accepts
-requests for `localhost`, `api.dtuaitsoc.ngrok.dev` and
-`api.haveibeenpwned.security.ait.dtu.dk` thanks to the `ALLOWED_HOSTS`
-configuration. On first start, migrations are applied and a
+requests for `localhost`, `api.dtuaitsoc.ngrok.dev` and the domain set via
+`PWNED_PROXY_DOMAIN` (defaulting to `api.haveibeenpwned.security.ait.dtu.dk`).
+On first start, migrations are applied and a
 superuser is created automatically. If the `.env` file was generated, all
 generated values including the admin credentials are printed and stored in that
 file so you can reuse them across restarts.
@@ -53,7 +53,8 @@ When deploying on platforms like Coolify you may receive a unique domain via
 the `SERVICE_FQDN_APP` environment variable. You can also supply additional
 hosts through `DJANGO_ALLOWED_HOSTS`. These values are automatically appended to
 the Django `ALLOWED_HOSTS` list so the application will accept requests for your
-custom domain.
+custom domain. The base domain used by Traefik and Django can be configured via
+`PWNED_PROXY_DOMAIN`.
 
 You can then log into the admin interface at
 `http://localhost:8000/admin/` (or via your ngrok domain) using the
